@@ -54,6 +54,10 @@ function applyCustomCSSVars(colors: CustomTheme['colors']) {
   root.style.setProperty('--custom-accent', colors.accent);
   root.style.setProperty('--custom-accent-dark', accentDark);
   root.style.setProperty('--custom-accent-light', accentLight);
+  root.style.setProperty('--custom-bg-accent-1', hexWithAlpha(colors.accent, 0.18));
+  root.style.setProperty('--custom-bg-accent-2', hexWithAlpha(colors.accent, 0.12));
+  root.style.setProperty('--custom-bg-accent-3', hexWithAlpha(colors.accent, 0.08));
+  root.style.setProperty('--custom-bg-accent-4', hexWithAlpha(colors.accent, 0.06));
 }
 
 export function applyTheme(id: ThemeId, customThemes: CustomTheme[], persist = true): ThemeId {
