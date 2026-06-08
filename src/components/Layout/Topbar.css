@@ -1,0 +1,308 @@
+.topbar {
+  padding: 16px 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text1);
+}
+
+.app-date {
+  font-size: 13px;
+  color: var(--text2);
+  padding-left: 12px;
+  border-left: 1px solid var(--border);
+}
+
+.theme-picker-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 2000;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
+  padding: 6px;
+  min-width: 200px;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.theme-picker-dropdown.open {
+  display: flex;
+}
+
+.theme-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text1);
+  transition: background .15s;
+}
+
+.theme-picker-item:hover {
+  background: var(--surface2);
+}
+
+.theme-picker-item.active {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+.theme-picker-item.custom-plus {
+  color: var(--accent);
+  font-weight: 600;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.theme-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0, 0, 0, .1);
+  flex-shrink: 0;
+}
+
+.delete-theme-btn {
+  color: var(--text3);
+  font-size: 15px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all .2s;
+}
+
+.delete-theme-btn:hover {
+  color: var(--danger);
+  background: rgba(226, 75, 74, 0.1);
+}
+
+.btn-control {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  padding: 4px 5px;
+  border-radius: var(--radius-sm);
+  transition: border-color .2s, background .2s, transform .1s;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.btn-control:hover {
+  border-color: var(--accent);
+  transform: scale(1.05);
+}
+
+.btn-control:active {
+  transform: scale(0.95);
+}
+
+.theme-icon {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: var(--text3);
+  font-size: 15px;
+  transition: all .2s;
+}
+
+.theme-icon.active {
+  display: flex;
+  background: var(--accent);
+  color: #fff;
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.settings-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: var(--text2);
+  font-size: 16px;
+  transition: color .2s;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  cursor: pointer;
+  border: 2px solid var(--border);
+  transition: border-color .2s;
+  flex-shrink: 0;
+}
+
+.user-avatar:hover {
+  border-color: var(--accent);
+}
+
+.user-avatar-placeholder {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.user-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 2000;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
+  padding: 6px;
+  min-width: 200px;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.user-menu.open {
+  display: flex;
+}
+
+.user-menu-header {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+.user-menu-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text1);
+}
+
+.user-menu-email {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+.user-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text1);
+  transition: background .15s;
+}
+
+.user-menu-item:hover {
+  background: var(--surface2);
+}
+
+.user-menu-item.danger {
+  color: var(--danger);
+}
+
+.user-menu-item.danger:hover {
+  background: #FCEBEB;
+}
+
+html[data-theme="dark"] .user-menu-item.danger:hover {
+  background: #3A1B1B;
+}
+
+.sync-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ok);
+  display: inline-block;
+  margin-left: 6px;
+  animation: pulse 2s infinite;
+}
+
+.sync-dot.syncing {
+  background: var(--warn);
+  animation: spin 1s linear infinite;
+}
+
+.sync-dot.error {
+  background: var(--danger);
+  animation: none;
+}
+
+.holiday-badge {
+  display: inline-block;
+  margin-left: 3px;
+  font-size: 9px;
+  background: var(--warn);
+  color: #fff;
+  border-radius: 4px;
+  padding: 1px 4px;
+  vertical-align: middle;
+  text-decoration: none;
+}
+
+.holidays-list {
+  max-height: 140px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.holiday-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--surface2);
+}
+
+.holiday-item span {
+  flex: 1;
+}
+
+.btn-holiday-del {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text3);
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 13px;
+  transition: color .15s;
+}
+
+.btn-holiday-del:hover {
+  color: var(--danger);
+}

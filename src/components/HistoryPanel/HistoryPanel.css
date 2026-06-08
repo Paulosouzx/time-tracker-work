@@ -1,0 +1,60 @@
+.hist-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.hist-filter-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--text3);
+  white-space: nowrap;
+}
+
+.week-group-row td {
+  background: var(--surface2);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--text3);
+  padding: 7px 14px;
+}
+
+.week-total-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.week-total-badge.ok {
+  background: #E1F5EE;
+  color: #0F6E56;
+}
+
+html[data-theme="dark"] .week-total-badge.ok {
+  background: #134E3A;
+  color: #E1F5EE;
+}
+
+.week-total-badge.warn {
+  background: #FAEEDA;
+  color: #854F0B;
+}
+
+.week-total-badge.short {
+  background: #FCEBEB;
+  color: #A32D2D;
+}
+
+html[data-theme="dark"] .week-total-badge.short {
+  background: #4A1B1B;
+  color: #FCEBEB;
+}
