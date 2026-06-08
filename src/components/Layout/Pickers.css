@@ -43,8 +43,14 @@
 }
 
 .custom-field .field-value i {
-  color: var(--text3);
-  font-size: 14px;
+  color: var(--accent);
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-shadow: none;
 }
 
 .fi {

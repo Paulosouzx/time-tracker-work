@@ -80,9 +80,9 @@ export default function Tabs() {
   const { activeTab, setActiveTab, notes } = useApp();
   const activeNotes = useMemo(() => notes.filter(note => !note.done).length, [notes]);
 
-  const tabs: { id: TabId; label: string; icon?: string }[] = [
+  const tabs: { id: TabId; label: string }[] = [
     { id: 'reg', label: 'Registar' },
-    { id: 'dash', label: 'Dashboard', icon: 'ti-chart-line' },
+    { id: 'dash', label: 'Dashboard' },
     { id: 'hist', label: 'Histórico' },
     { id: 'notes', label: 'Notas' },
   ];
@@ -96,7 +96,6 @@ export default function Tabs() {
           className={`tab ${activeTab === tab.id ? 'active' : ''}`}
           onClick={() => setActiveTab(tab.id)}
         >
-          {tab.icon && <i className={`ti ${tab.icon}`} style={{ fontSize: 13 }} />}
           {tab.label}
           {tab.id === 'notes' && activeNotes > 0 && <span className="notes-badge">{activeNotes}</span>}
         </button>

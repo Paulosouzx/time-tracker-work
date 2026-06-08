@@ -1,11 +1,26 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ElementType, type RefObject } from 'react';
+import {
+  IconSettings,
+  IconLogout,
+  IconPalette,
+  IconTrash,
+  IconPlus,
+  IconX,
+  IconSun,
+  IconMoon,
+  IconLeaf,
+  IconDroplet,
+  IconStars,
+  IconHeart,
+  IconFlame,
+} from '@tabler/icons-react';
 import { supabase } from '../../supabase/supabaseClient';
 import { useApp, BASE_THEMES } from '../../context/AppContext';
 import { getGreeting } from '../../utils';
 import Settings from '../Settings/Settings';
 import './Topbar.css';
 
-function useClickOutside(ref: React.RefObject<HTMLElement>, onClose: () => void) {
+function useClickOutside(ref: RefObject<HTMLElement>, onClose: () => void) {
   useEffect(() => {
     function handleClick(event: MouseEvent) {
       if (ref.current && !ref.current.contains(event.target as Node)) {
@@ -56,12 +71,22 @@ function UserAvatar() {
           className="user-menu-item danger"
           onClick={async () => { setOpen(false); await supabase.auth.signOut(); }}
         >
-          <i className="ti ti-logout" /> Terminar sessão
+          <IconLogout size={14} stroke={2} /> Terminar sessão
         </button>
       </div>
     </div>
   );
 }
+
+const themeIconMap: Record<string, ElementType> = {
+  light: IconSun,
+  dark: IconMoon,
+  nature: IconLeaf,
+  ocean: IconDroplet,
+  midnight: IconStars,
+  rose: IconHeart,
+  amber: IconFlame,
+};
 
 function ThemePicker() {
   const { currentTheme, customThemes, applyTheme, deleteCustomTheme } = useApp();
@@ -70,10 +95,10 @@ function ThemePicker() {
   const pickerRef = useRef<HTMLDivElement>(null);
   useClickOutside(pickerRef, () => setOpen(false));
 
-  const activeThemeIcon = useMemo(() => {
+  const ActiveThemeIcon = useMemo(() => {
     return customThemes.some(theme => theme.id === currentTheme)
-      ? 'ti-palette'
-      : BASE_THEMES.find(theme => theme.id === currentTheme)?.icon || 'ti-sun';
+      ? IconPalette
+      : themeIconMap[currentTheme] || IconSun;
   }, [currentTheme, customThemes]);
 
   return (
@@ -81,23 +106,26 @@ function ThemePicker() {
       <div className="theme-picker-wrap" ref={pickerRef}>
         <button className="btn-control" type="button" onClick={() => setOpen(prev => !prev)} title="Escolher tema">
           <span className="theme-icon active">
-            <i className={`ti ${activeThemeIcon}`} />
+            <ActiveThemeIcon size={18} stroke={2} />
           </span>
         </button>
 
         <div className={`theme-picker-dropdown ${open ? 'open' : ''}`}>
-          {BASE_THEMES.map(theme => (
-            <button
-              key={theme.id}
-              type="button"
-              className={`theme-picker-item ${currentTheme === theme.id ? 'active' : ''}`}
-              onClick={() => { applyTheme(theme.id); setOpen(false); }}
-            >
-              <span className="theme-swatch" style={{ background: theme.color }} />
-              <i className={`ti ${theme.icon}`} />
-              <span>{theme.name}</span>
-            </button>
-          ))}
+          {BASE_THEMES.map(theme => {
+            const ThemeIcon = themeIconMap[theme.id] || IconPalette;
+            return (
+              <button
+                key={theme.id}
+                type="button"
+                className={`theme-picker-item ${currentTheme === theme.id ? 'active' : ''}`}
+                onClick={() => { applyTheme(theme.id); setOpen(false); }}
+              >
+                <span className="theme-swatch" style={{ background: theme.color }} />
+                <ThemeIcon size={16} stroke={2} />
+                <span>{theme.name}</span>
+              </button>
+            );
+          })}
 
           {customThemes.length > 0 && (
             <>
@@ -110,16 +138,19 @@ function ThemePicker() {
                   onClick={() => { applyTheme(theme.id); setOpen(false); }}
                 >
                   <span className="theme-swatch" style={{ background: theme.colors.accent }} />
-                  <i className="ti ti-palette" />
+                  <IconPalette size={16} stroke={2} />
                   <span className="theme-picker-name">{theme.name}</span>
-                  <i
-                    className="ti ti-trash delete-theme-btn"
+                  <button
+                    className="delete-theme-btn"
+                    type="button"
                     title="Remover Tema"
                     onClick={event => {
                       event.stopPropagation();
                       if (confirm('Apagar este tema?')) deleteCustomTheme(theme.id);
                     }}
-                  />
+                  >
+                    <IconTrash size={14} stroke={2} />
+                  </button>
                 </button>
               ))}
             </>
@@ -127,7 +158,7 @@ function ThemePicker() {
 
           <div className="theme-picker-divider" />
           <button type="button" className="theme-picker-item custom-plus" onClick={() => { setOpen(false); setShowCustomModal(true); }}>
-            <i className="ti ti-plus" /> Criar Novo Tema
+            <IconPlus size={14} stroke={2} /> Criar Novo Tema
           </button>
         </div>
       </div>
@@ -178,7 +209,7 @@ function CustomThemeModal({ onClose }: { onClose: () => void }) {
       <div className="modal modal-large">
         <div className="modal-header">
           <h2>Criar Tema Personalizado</h2>
-          <button className="btn-icon" type="button" onClick={onClose}><i className="ti ti-x" /></button>
+          <button className="btn-icon" type="button" onClick={onClose}><IconX size={16} stroke={2} /></button>
         </div>
 
         <div className="fi-wrapper">
@@ -230,7 +261,7 @@ export default function Topbar() {
   useEffect(() => {
     function updateClock() {
       const now = new Date();
-      setTimeText(`· ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`);
+      setTimeText(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`);
       setDateText(now.toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' }));
       setGreeting(getGreeting());
     }
@@ -256,13 +287,14 @@ export default function Topbar() {
 
         <div className="topbar-time">
           <span className="app-date">{dateText}</span>
-          <span className="app-date app-time">{timeText}</span>
+          <span className="topbar-separator" aria-hidden="true">•</span>
+          <span className="app-time">{timeText}</span>
         </div>
 
         <ThemePicker />
 
         <button className="btn-control" type="button" onClick={() => setSettingsOpen(true)} title="Configurações">
-          <span className="settings-icon"><i className="ti ti-settings" /></span>
+          <span className="settings-icon"><IconSettings size={18} stroke={2} /></span>
         </button>
       </div>
 

@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
+import { IconClock, IconCalendarEvent, IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import { toDStr, todayStr, fmtH, MONTH_NAMES } from '../../utils';
+
 import './Pickers.css';
 
 interface TimePickerProps {
@@ -37,10 +39,10 @@ export function TimePicker({ value, onChange }: TimePickerProps) {
         onClick={() => setOpen(v => !v)}
       >
         <span className="field-label">Tempo</span>
-        <span className="field-value">
-          <i className="ti ti-clock"/>
+        <div className="field-value">
+          <IconClock size={18} stroke={2} />
           <span>{fmtH(value)}</span>
-        </span>
+        </div>
       </div>
       <div className={`picker-dropdown ${open ? 'open' : ''}`}>
         {options.map(v => (
@@ -99,10 +101,10 @@ export function CalendarPicker({ value, onChange, alignRight = false, showTodayB
     <div style={{ position: 'relative' }} ref={ref}>
       <div className={`custom-field ${open ? 'active-focus' : ''}`} onClick={handleOpen}>
         <span className="field-label">Data</span>
-        <span className="field-value">
-          <i className="ti ti-calendar"/>
+        <div className="field-value">
+          <IconCalendarEvent size={18} stroke={2} />
           <span>{label}</span>
-        </span>
+        </div>
       </div>
 
       <div className={`cal-dropdown ${open ? 'open' : ''}`} style={alignRight ? { right: 0, left: 'auto' } : {}}>
@@ -110,10 +112,10 @@ export function CalendarPicker({ value, onChange, alignRight = false, showTodayB
           <span className="cal-month-title">{MONTH_NAMES[month]} {year}</span>
           <div className="cal-arrows">
             <button className="cal-btn" onClick={e => { e.stopPropagation(); setViewDate(d => { const n = new Date(d); n.setMonth(n.getMonth()-1); return n; }); }}>
-              <i className="ti ti-chevron-left"/>
+              <IconChevronLeft size={16} stroke={2} />
             </button>
             <button className="cal-btn" onClick={e => { e.stopPropagation(); setViewDate(d => { const n = new Date(d); n.setMonth(n.getMonth()+1); return n; }); }}>
-              <i className="ti ti-chevron-right"/>
+              <IconChevronRight size={16} stroke={2} />
             </button>
           </div>
         </div>
