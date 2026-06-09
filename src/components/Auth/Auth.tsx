@@ -108,6 +108,18 @@ export default function Auth() {
         {previousGoogleLogin ? (
           <div className="login-google-only-note">
             Já usaste esta conta Google antes. Usa o botão acima para continuar.
+            <button
+              className="login-switch-button"
+              type="button"
+              onClick={() => {
+                localStorage.removeItem('tt_last_auth_provider');
+                localStorage.removeItem('tt_last_auth_email');
+                setPreviousGoogleLogin(false);
+                setLastGoogleLabel('Google');
+              }}
+            >
+              Usar outra conta
+            </button>
           </div>
         ) : (
           <>
