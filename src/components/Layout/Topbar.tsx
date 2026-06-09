@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useRef, useState, type ElementType, type RefObject } from 'react';
 import {
   IconSettings,
@@ -35,8 +36,9 @@ function useClickOutside(ref: RefObject<HTMLElement>, onClose: () => void) {
 function UserAvatar() {
   const { currentUser } = useApp();
   const [open, setOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  useClickOutside(menuRef, () => setOpen(false));
+  const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
+  const wrapRef = useRef<HTMLDivElement>(null);
+  useClickOutside(wrapRef as RefObject<HTMLElement>, () => setOpen(false));
 
   if (!currentUser) return null;
 
@@ -45,35 +47,47 @@ function UserAvatar() {
   const initials = name.split(' ').map((part: string) => part[0]).slice(0, 2).join('').toUpperCase() || '?';
   const avatarUrl = metadata?.avatar_url || metadata?.picture || '';
 
+  function handleToggle() {
+    if (!open && wrapRef.current) {
+      const rect = wrapRef.current.getBoundingClientRect();
+      setMenuPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right });
+    }
+    setOpen(prev => !prev);
+  }
+
   return (
-    <div className="user-avatar-wrap" ref={menuRef}>
+    <div className="user-avatar-wrap" ref={wrapRef}>
       {avatarUrl ? (
         <img
           src={avatarUrl}
           className="user-avatar"
           alt={name}
           title={name}
-          onClick={() => setOpen(prev => !prev)}
+          onClick={handleToggle}
+          referrerPolicy="no-referrer"
         />
       ) : (
-        <button type="button" className="user-avatar-placeholder" title={name} onClick={() => setOpen(prev => !prev)}>
+        <button type="button" className="user-avatar-placeholder" title={name} onClick={handleToggle}>
           {initials}
         </button>
       )}
 
-      <div className={`user-menu ${open ? 'open' : ''}`}>
-        <div className="user-menu-header">
-          <div className="user-menu-name">{name}</div>
-          <div className="user-menu-email">{currentUser.email || ''}</div>
-        </div>
-        <button
-          type="button"
-          className="user-menu-item danger"
-          onClick={async () => { setOpen(false); await supabase.auth.signOut(); }}
-        >
-          <IconLogout size={14} stroke={2} /> Terminar sessão
-        </button>
-      </div>
+      {open && createPortal(
+        <div className="user-menu open" style={{ position: 'fixed', top: menuPos.top, right: menuPos.right, zIndex: 9999 }}>
+          <div className="user-menu-header">
+            <div className="user-menu-name">{name}</div>
+            <div className="user-menu-email">{currentUser.email || ''}</div>
+          </div>
+          <button
+            type="button"
+            className="user-menu-item danger"
+            onClick={async () => { setOpen(false); await supabase.auth.signOut(); }}
+          >
+            <IconLogout size={14} stroke={2} /> Terminar sessão
+          </button>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
@@ -91,9 +105,18 @@ const themeIconMap: Record<string, ElementType> = {
 function ThemePicker() {
   const { currentTheme, customThemes, applyTheme, deleteCustomTheme } = useApp();
   const [open, setOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
   const [showCustomModal, setShowCustomModal] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
   useClickOutside(pickerRef, () => setOpen(false));
+
+  function handleToggle() {
+    if (!open && pickerRef.current) {
+      const rect = pickerRef.current.getBoundingClientRect();
+      setMenuPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right });
+    }
+    setOpen(prev => !prev);
+  }
 
   const ActiveThemeIcon = useMemo(() => {
     return customThemes.some(theme => theme.id === currentTheme)
@@ -104,13 +127,15 @@ function ThemePicker() {
   return (
     <>
       <div className="theme-picker-wrap" ref={pickerRef}>
-        <button className="btn-control" type="button" onClick={() => setOpen(prev => !prev)} title="Escolher tema">
+        <button className="btn-control" type="button" onClick={handleToggle} title="Escolher tema">
           <span className="theme-icon active">
             <ActiveThemeIcon size={18} stroke={2} />
           </span>
         </button>
+      </div>
 
-        <div className={`theme-picker-dropdown ${open ? 'open' : ''}`}>
+      {open && createPortal(
+        <div className="theme-picker-dropdown open" style={{ position: 'fixed', top: menuPos.top, right: menuPos.right, zIndex: 9999 }}>
           {BASE_THEMES.map(theme => {
             const ThemeIcon = themeIconMap[theme.id] || IconPalette;
             return (
@@ -160,8 +185,9 @@ function ThemePicker() {
           <button type="button" className="theme-picker-item custom-plus" onClick={() => { setOpen(false); setShowCustomModal(true); }}>
             <IconPlus size={14} stroke={2} /> Criar Novo Tema
           </button>
-        </div>
-      </div>
+        </div>,
+        document.body
+      )}
 
       {showCustomModal && <CustomThemeModal onClose={() => setShowCustomModal(false)} />}
     </>

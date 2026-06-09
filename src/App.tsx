@@ -7,9 +7,18 @@ import RegisterPanel from './components/RegisterPanel/RegisterPanel';
 import Dashboard from './components/Dashboard/Dashboard';
 import HistoryPanel from './components/HistoryPanel/HistoryPanel';
 import NotesPanel from './components/NotesPanel/NotesPanel';
+import Auth from './components/Auth/Auth';
 
 export default function App() {
-  const { activeTab } = useApp();
+  const { activeTab, currentUser, authReady } = useApp();
+
+  if (!authReady) {
+    return null;
+  }
+
+  if (!currentUser) {
+    return <Auth />;
+  }
 
   return (
     <div className="layout">
