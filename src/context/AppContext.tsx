@@ -129,20 +129,64 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setNotes(notesData);
 
       if (prefs) {
-        if (prefs.theme) { applyTheme(prefs.theme, false); }
-        if (prefs.userName !== undefined) setUserName(prefs.userName);
-        if (prefs.showSync !== undefined) setShowSync(prefs.showSync);
-        if (prefs.showNotesDone !== undefined) setShowNotesDone(prefs.showNotesDone);
-        if (prefs.notesCollapsed !== undefined) setNotesCollapsed(prefs.notesCollapsed);
-        if (prefs.showHolidays !== undefined) setShowHolidays(prefs.showHolidays);
-        if (prefs.customThemes !== undefined) setCustomThemes(prefs.customThemes as CustomTheme[]);
-        if (prefs.customFontEnabled !== undefined) setCustomFontEnabled(prefs.customFontEnabled);
-        if (prefs.customFont !== undefined) { setCustomFont(prefs.customFont); applyFontService(prefs.customFont); }
-        if (prefs.noteOrder !== undefined) setNoteOrder(prefs.noteOrder);
-        if (prefs.holidays !== undefined) setHolidays(prefs.holidays);
-        if (prefs.floatStruckNotes !== undefined) setFloatStruckNotes(prefs.floatStruckNotes);
-        if (prefs.selectedHolidayCountry !== undefined) setSelectedHolidayCountry(prefs.selectedHolidayCountry);
-        if (prefs.selectedHolidaySubdivision !== undefined) setSelectedHolidaySubdivision(prefs.selectedHolidaySubdivision);
+        // Sync all prefs to localStorage so they persist on refresh
+        if (prefs.theme) { 
+          applyTheme(prefs.theme, false); 
+          localStorage.setItem(THEME_KEY, prefs.theme);
+        }
+        if (prefs.userName !== undefined) { 
+          setUserName(prefs.userName); 
+          localStorage.setItem('tt_user_name', prefs.userName);
+        }
+        if (prefs.showSync !== undefined) { 
+          setShowSync(prefs.showSync); 
+          localStorage.setItem('tt_show_sync', String(prefs.showSync));
+        }
+        if (prefs.showNotesDone !== undefined) { 
+          setShowNotesDone(prefs.showNotesDone); 
+          localStorage.setItem('tt_notes_done', String(prefs.showNotesDone));
+        }
+        if (prefs.notesCollapsed !== undefined) { 
+          setNotesCollapsed(prefs.notesCollapsed); 
+          localStorage.setItem('tt_notes_collapsed', String(prefs.notesCollapsed));
+        }
+        if (prefs.showHolidays !== undefined) { 
+          setShowHolidays(prefs.showHolidays); 
+          localStorage.setItem('tt_show_holidays', String(prefs.showHolidays));
+        }
+        if (prefs.customThemes !== undefined) { 
+          setCustomThemes(prefs.customThemes as CustomTheme[]); 
+          localStorage.setItem('tt_custom_themes', JSON.stringify(prefs.customThemes));
+        }
+        if (prefs.customFontEnabled !== undefined) { 
+          setCustomFontEnabled(prefs.customFontEnabled); 
+          localStorage.setItem('tt_custom_font_enabled', String(prefs.customFontEnabled));
+        }
+        if (prefs.customFont !== undefined) { 
+          setCustomFont(prefs.customFont); 
+          applyFontService(prefs.customFont);
+          localStorage.setItem('tt_custom_font', prefs.customFont);
+        }
+        if (prefs.noteOrder !== undefined) { 
+          setNoteOrder(prefs.noteOrder); 
+          localStorage.setItem('tt_note_order', JSON.stringify(prefs.noteOrder));
+        }
+        if (prefs.holidays !== undefined) { 
+          setHolidays(prefs.holidays); 
+          localStorage.setItem('tt_holidays', JSON.stringify(prefs.holidays));
+        }
+        if (prefs.floatStruckNotes !== undefined) { 
+          setFloatStruckNotes(prefs.floatStruckNotes); 
+          localStorage.setItem('tt_float_struck', JSON.stringify(prefs.floatStruckNotes));
+        }
+        if (prefs.selectedHolidayCountry !== undefined) { 
+          setSelectedHolidayCountry(prefs.selectedHolidayCountry); 
+          localStorage.setItem('tt_holiday_country', prefs.selectedHolidayCountry);
+        }
+        if (prefs.selectedHolidaySubdivision !== undefined) { 
+          setSelectedHolidaySubdivision(prefs.selectedHolidaySubdivision); 
+          localStorage.setItem('tt_holiday_subdivision', prefs.selectedHolidaySubdivision);
+        }
       }
     } catch (e) {
       console.warn('Supabase load error:', e);

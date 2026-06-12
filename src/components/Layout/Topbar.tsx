@@ -50,7 +50,16 @@ function UserAvatar() {
   function handleToggle() {
     if (!open && wrapRef.current) {
       const rect = wrapRef.current.getBoundingClientRect();
-      setMenuPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right });
+      const menuWidth = 220; // approximate menu width
+      const viewportWidth = window.innerWidth;
+      let right = viewportWidth - rect.right;
+      
+      // Ensure menu doesn't go off-screen on mobile
+      if (right + menuWidth > viewportWidth - 16) {
+        right = Math.max(16, viewportWidth - menuWidth - 16);
+      }
+      
+      setMenuPos({ top: rect.bottom + 8, right });
     }
     setOpen(prev => !prev);
   }
@@ -113,7 +122,16 @@ function ThemePicker() {
   function handleToggle() {
     if (!open && pickerRef.current) {
       const rect = pickerRef.current.getBoundingClientRect();
-      setMenuPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right });
+      const menuWidth = 280; // approximate menu width
+      const viewportWidth = window.innerWidth;
+      let right = viewportWidth - rect.right;
+      
+      // Ensure menu doesn't go off-screen on mobile
+      if (right + menuWidth > viewportWidth - 16) {
+        right = Math.max(16, viewportWidth - menuWidth - 16);
+      }
+      
+      setMenuPos({ top: rect.bottom + 8, right });
     }
     setOpen(prev => !prev);
   }

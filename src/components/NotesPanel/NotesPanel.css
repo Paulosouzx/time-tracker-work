@@ -387,6 +387,64 @@ html[data-theme="dark"] .notes-float {
   margin-bottom: 2px;
 }
 
+.rte-editor ul,
+.rte-editor ol,
+.note-card-body ul,
+.note-card-body ol,
+.note-float-preview ul,
+.note-float-preview ol {
+  padding-left: 24px;
+  margin: 6px 0;
+  list-style-position: inside;
+}
+
+.rte-editor ul,
+.note-card-body ul,
+.note-float-preview ul {
+  list-style-type: disc;
+}
+
+.rte-editor ol,
+.note-card-body ol,
+.note-float-preview ol {
+  list-style-type: decimal;
+}
+
+.rte-editor ul ul,
+.rte-editor ol ul,
+.rte-editor ul ol,
+.rte-editor ol ol,
+.note-card-body ul ul,
+.note-card-body ol ul,
+.note-card-body ul ol,
+.note-card-body ol ol,
+.note-float-preview ul ul,
+.note-float-preview ol ul,
+.note-float-preview ul ol,
+.note-float-preview ol ol {
+  padding-left: 28px;
+  margin: 2px 0;
+}
+
+.rte-editor ul ul,
+.note-card-body ul ul,
+.note-float-preview ul ul {
+  list-style-type: circle;
+}
+
+.rte-editor ul ul ul,
+.note-card-body ul ul ul,
+.note-float-preview ul ul ul {
+  list-style-type: square;
+}
+
+.rte-editor li,
+.note-card-body li,
+.note-float-preview li {
+  margin-bottom: 3px;
+  line-height: 1.6;
+}
+
 .notes-restore-tab {
   position: fixed;
   top: 50%;

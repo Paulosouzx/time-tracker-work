@@ -129,7 +129,7 @@ export default function HistoryPanel() {
           <td className="td-desc">{entry.desc}</td>
           <td className="td-link">
             {entry.link ? (
-              <a href={entry.link} target="_blank" rel="noopener noreferrer">
+              <a href={entry.link} target="_blank" rel="noopener noreferrer" className="td-link-wrapper" title="Abrir link">
                 <i className="ti ti-external-link td-link-icon" />
               </a>
             ) : null}

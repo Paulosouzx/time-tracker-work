@@ -58,3 +58,139 @@ html[data-theme="dark"] .week-total-badge.short {
   background: #4A1B1B;
   color: #FCEBEB;
 }
+
+.td-link-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: var(--text3);
+  transition: all 0.15s;
+  text-decoration: none;
+}
+
+/* Reset default link styles - ensure icon inherits color */
+.td-link-wrapper,
+.td-link-wrapper:link,
+.td-link-wrapper:visited,
+.td-link-wrapper:active,
+.td-link-wrapper:focus {
+  color: var(--text3);
+  text-decoration: none;
+}
+
+.td-link-wrapper:hover {
+  color: var(--accent);
+  background: var(--accent-light);
+  transform: scale(1.1);
+}
+
+/* Force icon to inherit parent color */
+.td-link-wrapper i,
+.td-link-wrapper:link i,
+.td-link-wrapper:visited i,
+.td-link-wrapper:active i,
+.td-link-wrapper:focus i {
+  color: inherit !important;
+}
+
+.td-link-icon {
+  font-size: 14px;
+  font-family: "tabler-icons" !important;
+  transition: transform 0.15s;
+  display: inline-block;
+  line-height: 1;
+  color: inherit;
+}
+
+.td-link-wrapper:hover .td-link-icon {
+  transform: scale(1.15);
+}
+
+/* Mobile responsive styles */
+@media (max-width: 480px) {
+  .hist-filter {
+    gap: 6px;
+  }
+
+  .hist-filter-label {
+    font-size: 10px;
+  }
+
+  .week-select {
+    min-width: 140px;
+    height: 32px;
+    font-size: 12px;
+    padding: 0 8px;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  table {
+    min-width: 500px;
+  }
+
+  th,
+  td {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .td-date {
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .td-proj {
+    font-size: 12px;
+  }
+
+  .td-desc {
+    font-size: 11px;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .td-h {
+    font-size: 12px;
+  }
+
+  .td-link-wrapper {
+    width: 24px;
+    height: 24px;
+  }
+
+  .td-link-icon {
+    font-size: 12px;
+  }
+
+  .btn-icon {
+    padding: 4px;
+  }
+
+  .week-group-row td {
+    font-size: 10px;
+    padding: 5px 10px;
+  }
+
+  .week-total-badge {
+    font-size: 10px;
+    padding: 1px 6px;
+  }
+}
+
+@media (max-width: 360px) {
+  .td-desc {
+    max-width: 100px;
+  }
+
+  .week-select {
+    min-width: 120px;
+  }
+}
