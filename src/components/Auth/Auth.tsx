@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { IconLoader2 } from '@tabler/icons-react';
 import { supabase } from '../../supabase/supabaseClient';
 import './Auth.css';
 
@@ -84,10 +85,10 @@ export default function Auth() {
       <div className="login-card">
         <div className="login-logo">
           <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 28, height: 28 }}>
-            <circle cx="10" cy="10" r="7.5" stroke="white" strokeWidth="1.6" />
-            <line x1="10" y1="10" x2="10" y2="4.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" />
-            <line x1="10" y1="10" x2="13.8" y2="12.2" stroke="white" strokeWidth="1.6" strokeLinecap="round" />
-            <circle cx="10" cy="10" r="1" fill="white" />
+            <circle cx="10" cy="10" r="7.5" stroke="currentColor" strokeWidth="1.6" />
+            <line x1="10" y1="10" x2="10" y2="4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            <line x1="10" y1="10" x2="13.8" y2="12.2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            <circle cx="10" cy="10" r="1" fill="currentColor" />
           </svg>
         </div>
 
@@ -171,12 +172,12 @@ export default function Auth() {
         )}
 
         {status && (
-          <div className={`login-status ${status.type}`}>{status.message}</div>
+          <div className={`login-status ${status.type}`} role={status.type === 'error' ? 'alert' : 'status'}>{status.message}</div>
         )}
 
         {loading && (
           <div className="login-spinner-wrapper">
-            <i className="ti ti-loader-2 login-spinner" />
+            <IconLoader2 className="login-spinner" size={22} stroke={1.75} aria-label="A carregar" />
           </div>
         )}
       </div>
