@@ -43,7 +43,7 @@
 
 .rte-btn:hover {
   background: var(--surface-muted);
-  color: var(--primary);
+  color: var(--primary-text);
 }
 
 .rte-sep {
@@ -132,6 +132,6 @@
 }
 
 .rich-content a {
-  color: var(--primary);
+  color: var(--primary-text);
   text-decoration: underline;
 }

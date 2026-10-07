@@ -518,7 +518,8 @@ export default function Dashboard() {
                 Semana {getWeekNumber(selectedWeek)} · <span className="tabular">{weekRangeLabel(selectedWeek)}</span>
               </h2>
               <p className="dash-hero-value tabular">{fmtH(weekTotal)}</p>
-              <p className="dash-hero-sub">de 40h · {weekEntries.length} entradas · clica numa barra para mudar de semana</p>
+              <p className="dash-hero-sub">de 40h · {weekEntries.length} entradas</p>
+              <p className="dash-hero-hint">Clica numa barra para ver outra semana</p>
             </div>
           ) : (
             <div>

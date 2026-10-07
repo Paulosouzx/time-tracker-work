@@ -125,7 +125,7 @@
 }
 
 .bottom-nav-item.active {
-  color: var(--primary);
+  color: var(--primary-text);
 }
 
 .bottom-nav-item.active .nav-icon {

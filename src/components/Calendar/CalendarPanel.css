@@ -61,7 +61,7 @@
   .cal-col-total {
     font-size: 13px;
     font-weight: 600;
-    color: var(--primary);
+    color: var(--primary-text);
   }
 
   .cal-col-holiday {
@@ -121,7 +121,7 @@
   }
 
   .cal-col-add:hover {
-    color: var(--primary);
+    color: var(--primary-text);
     border-color: var(--primary);
   }
 }

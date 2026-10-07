@@ -202,7 +202,7 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  color: var(--primary);
+  color: var(--primary-text);
   transition: background 0.15s, opacity 0.15s;
 }
 
@@ -247,12 +247,12 @@
 }
 
 .fn-done:hover {
-  color: var(--primary);
+  color: var(--primary-text);
   background: var(--primary-soft);
 }
 
 .fn-done.checked {
-  color: var(--primary);
+  color: var(--primary-text);
 }
 
 .fn-row.done .fn-item {
@@ -362,7 +362,7 @@
   border-radius: var(--radius-pill);
   font-size: 14px;
   font-weight: 600;
-  color: var(--primary);
+  color: var(--primary-text);
 }
 
 .fn-open-link:hover {
@@ -411,7 +411,7 @@
 
 .fn-minibar-main svg {
   flex-shrink: 0;
-  color: var(--primary);
+  color: var(--primary-text);
 }
 
 .fn-minibar-title {

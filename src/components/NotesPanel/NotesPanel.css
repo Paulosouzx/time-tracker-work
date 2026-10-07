@@ -125,6 +125,6 @@
 }
 
 .btn-icon.done-active {
-  color: var(--primary);
+  color: var(--primary-text);
   background: var(--primary-soft);
 }

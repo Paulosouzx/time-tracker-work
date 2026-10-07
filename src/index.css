@@ -19,6 +19,7 @@ html[data-theme="light"] {
   --primary-hover: #215649;
   --primary-contrast: #FFFFFF;
   --primary-soft: rgba(41, 105, 90, 0.10);
+  --primary-text: #29695A;
   --accent: #E6F289;
   --accent-contrast: #1F3D33;
   --text: #1C1C1C;
@@ -76,6 +77,7 @@ html[data-theme="dark"] {
   --primary-hover: #5FAE97;
   --primary-contrast: #0F1714;
   --primary-soft: rgba(78, 156, 134, 0.16);
+  --primary-text: #6DB8A2;
   --accent: #E6F289;
   --accent-contrast: #1F3D33;
   --text: #EEF0E8;
@@ -194,7 +196,7 @@ button {
 }
 
 .btn-icon:hover {
-  color: var(--primary);
+  color: var(--primary-text);
   background: var(--primary-soft);
 }
 
@@ -474,7 +476,7 @@ button {
   height: 56px;
   border-radius: 50%;
   background: var(--surface-muted);
-  color: var(--primary);
+  color: var(--primary-text);
   margin-bottom: 4px;
 }
 

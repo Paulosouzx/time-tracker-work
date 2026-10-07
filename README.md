@@ -14,7 +14,8 @@ Descrição curta: uma app leve para registar entradas de tempo, gerir notas, im
 - [Pré-requisitos](#pré-requisitos)
 - [Configuração e execução](#configuração-e-execução)
 - [Configurar Supabase / Auth](#configurar-supabase--auth)
-- [Ícones e fontes (Tabler / Google Fonts)](#ícones-e-fontes-tabler--google-fonts)
+- [Ícones e fontes](#ícones-e-fontes)
+- [Realtime](#realtime)
 - [Teste e build](#teste-e-build)
 - [Depuração & Troubleshooting](#depuração--troubleshooting)
 - [Contribuir](#contribuir)
@@ -25,26 +26,32 @@ Descrição curta: uma app leve para registar entradas de tempo, gerir notas, im
 ## Características
 
 - Login com Supabase (email/senha + OAuth Google)
-- Registo e gestão de entradas de tempo
-- Painel de notas com marcação e ordenação
+- Registo e gestão de entradas de tempo (início, calendário semanal, histórico)
+- Dashboard com seleção de semana e vista geral
+- Notas com rich text, marcação, ordenação e painel de notas flutuante em todas as páginas
+- Sincronização de notas em tempo real (Supabase Realtime)
 - Importação de feriados públicos via API (Nager.Date)
-- Temas personalizados e seleção de fontes
-- Export/import de preferências para sincronização com Supabase
+- Tema claro/escuro/sistema, preferências sincronizadas em `tt_prefs`
+- PWA instalável (manifest + service worker)
+
+Atalho do painel de notas: `Alt + Shift + N` (ou `Ctrl/⌘ + Shift + N` quando o browser não o reserva); `Esc` minimiza.
 
 ## Tecnologias
 
 - React + TypeScript
 - Vite
 - Supabase (Auth + armazenamento de prefs)
-- Tabler Icons (icon-font via CSS)
+- Tabler Icons (`@tabler/icons-react`)
+- vite-plugin-pwa
 
 ## Estrutura do projeto (destacados)
 
 - [src/App.tsx](src/App.tsx) — entrypoint da aplicação
 - [src/context/AppContext.tsx](src/context/AppContext.tsx) — Provider e estado global
 - [src/components/Auth/Auth.tsx](src/components/Auth/Auth.tsx) — tela de login e registo
-- [src/components/Layout/Topbar.tsx](src/components/Layout/Topbar.tsx) — topo / menus
-- [src/components/Settings/Settings.tsx](src/components/Settings/Settings.tsx) — painel de configurações
+- [src/components/Layout/AppShell.tsx](src/components/Layout/AppShell.tsx) — layout, navegação e notas flutuantes
+- [src/components/FloatingNotes/FloatingNotes.tsx](src/components/FloatingNotes/FloatingNotes.tsx) — painel de notas flutuante
+- [src/components/Settings/Settings.tsx](src/components/Settings/Settings.tsx) — perfil e definições
 - [src/supabase/supabaseClient.ts](src/supabase/supabaseClient.ts) — cliente supabase
 - [src/components/Auth/Auth.css](src/components/Auth/Auth.css) — estilos do login
 
@@ -100,16 +107,18 @@ npm run preview
 - Certifique-se de que as keys em `.env.local` correspondem ao projeto do Supabase.
 - O app guarda preferências no Supabase quando um usuário está autenticado.
 
-## Ícones e fontes (Tabler / Google Fonts)
+## Ícones e fontes
 
-- Tabler Icons: a app usa a icon-font de Tabler (classes `ti ti-*`). Para garantir que as icons apareçam em produção, inclua o CSS/font em `index.html` ou importe via CDN: ex.:
+- Ícones: componentes de `@tabler/icons-react`.
+- Fonte: Urbanist (Google Fonts), carregada em `index.html`.
 
-```html
-<!-- index.html -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tabler-icons@latest/iconfont/tabler-icons.min.css">
+## Realtime
+
+A sincronização de notas precisa de `tt_notes` na publicação Realtime:
+
+```sql
+alter publication supabase_realtime add table public.tt_notes;
 ```
-
-- Fonts: o seletor de fontes já injeta links do Google Fonts (Inter, Nunito, Geist) quando necessário; não é preciso adicionar manualmente.
 
 ## Teste e build
 

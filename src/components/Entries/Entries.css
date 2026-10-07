@@ -94,7 +94,7 @@
 .day-group-total {
   font-size: 15px;
   font-weight: 600;
-  color: var(--primary);
+  color: var(--primary-text);
 }
 
 .entry-form-grid {

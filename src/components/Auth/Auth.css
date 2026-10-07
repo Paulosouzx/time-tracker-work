@@ -150,7 +150,7 @@
 }
 
 .login-switch-button {
-  color: var(--primary);
+  color: var(--primary-text);
   font-weight: 600;
 }
 
@@ -163,7 +163,7 @@
 
 .login-status.success {
   background: var(--primary-soft);
-  color: var(--primary);
+  color: var(--primary-text);
 }
 
 .login-status.error {
@@ -174,7 +174,7 @@
 .login-spinner-wrapper {
   display: flex;
   justify-content: center;
-  color: var(--primary);
+  color: var(--primary-text);
 }
 
 .login-spinner {

@@ -23,7 +23,7 @@
 }
 
 .picker-trigger svg {
-  color: var(--primary);
+  color: var(--primary-text);
   flex-shrink: 0;
 }
 
@@ -135,7 +135,7 @@
 }
 
 .cal-day.today {
-  color: var(--primary);
+  color: var(--primary-text);
   font-weight: 600;
   box-shadow: inset 0 0 0 1.5px var(--primary);
 }

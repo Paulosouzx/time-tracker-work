@@ -24,7 +24,7 @@
   font-size: 32px;
   font-weight: 600;
   line-height: 1;
-  color: var(--primary);
+  color: var(--primary-text);
 }
 
 .week-bar {
@@ -45,8 +45,8 @@
 
 .week-days {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
 }
 
 .week-day {
@@ -71,7 +71,8 @@
 }
 
 .week-day-hours {
-  font-size: 13px;
+  font-size: clamp(11px, 3vw, 13px);
+  letter-spacing: -0.02em;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
