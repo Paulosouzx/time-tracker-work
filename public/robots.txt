@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /calendario
+Disallow: /dashboard
+Disallow: /historico
+Disallow: /notas
+Disallow: /perfil
+
+Sitemap: https://time-tracker-work.netlify.app/sitemap.xml

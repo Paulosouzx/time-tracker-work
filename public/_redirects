@@ -1,1 +1,7 @@
-/*    /index.html   200
+/login        /index.html   200
+/calendario   /index.html   200
+/dashboard    /index.html   200
+/historico    /index.html   200
+/notas        /index.html   200
+/perfil       /index.html   200
+/*            /index.html   404
