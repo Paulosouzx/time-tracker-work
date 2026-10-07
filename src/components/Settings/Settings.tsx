@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { IconLogout } from '@tabler/icons-react';
+import { IconLogout, IconInfoCircle, IconX, IconSun, IconMoon, IconDeviceDesktop } from '@tabler/icons-react';
 import { useApp } from '../../context/AppContext';
 import { supabase } from '../../supabase/supabaseClient';
 import UserAvatar, { getUserDisplay } from '../Layout/UserAvatar';
+import { ThemeMode } from '../../types';
 import './Settings.css';
 
 const NAGER_BASE = 'https://date.nager.at/api/v3';
@@ -24,12 +25,12 @@ function ToggleRow({
     <div className="setting-row">
       <label htmlFor={id} className="setting-label">
         {label}
-        {description && <div className="setting-row-desc">{description}</div>}
+        {description && <span className="setting-desc">{description}</span>}
       </label>
-      <label className="toggle-switch">
-        <input id={id} type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} />
+      <span className="toggle-switch">
+        <input id={id} type="checkbox" role="switch" checked={checked} onChange={(e) => onChange(e.target.checked)} />
         <span className="toggle-slider" />
-      </label>
+      </span>
     </div>
   );
 }
@@ -60,14 +61,11 @@ function HolidaySettings() {
     async function loadCountries() {
       try {
         const response = await fetch(`${NAGER_BASE}/AvailableCountries`);
-        if (response.ok) {
-          setCountries(await response.json());
-        }
+        if (response.ok) setCountries(await response.json());
       } catch {
         setCountries([]);
       }
     }
-
     loadCountries();
   }, []);
 
@@ -76,7 +74,6 @@ function HolidaySettings() {
       setSubdivisions([]);
       return;
     }
-
     async function loadSubdivisions() {
       try {
         const response = await fetch(`${NAGER_BASE}/CountryInfo/${selectedHolidayCountry}`);
@@ -87,7 +84,6 @@ function HolidaySettings() {
         setSubdivisions([]);
       }
     }
-
     loadSubdivisions();
   }, [selectedHolidayCountry]);
 
@@ -96,9 +92,14 @@ function HolidaySettings() {
     savePrefs();
   }
 
+  function showStatus(message: string, ok: boolean) {
+    setStatus(message);
+    setStatusOk(ok);
+  }
+
   async function fetchHolidays() {
     if (!selectedHolidayCountry) {
-      alert('Escolhe um país primeiro.');
+      showStatus('Escolhe um país primeiro.', false);
       return;
     }
 
@@ -114,7 +115,7 @@ function HolidaySettings() {
         data = data.filter((holiday: any) =>
           !holiday.counties || holiday.counties.some((county: string) =>
             county === selectedHolidaySubdivision || county.startsWith(`${selectedHolidaySubdivision}-`),
-          )
+          ),
         );
       }
 
@@ -125,7 +126,7 @@ function HolidaySettings() {
       data.forEach((holiday: any) => {
         const [yearPart, monthPart, dayPart] = holiday.date.split('-');
         const dateString = `${dayPart}/${monthPart}/${yearPart}`;
-        if (!nextHolidays.some(item => item.date === dateString)) {
+        if (!nextHolidays.some((item) => item.date === dateString)) {
           nextHolidays.push({ date: dateString, name: holiday.localName || holiday.name });
           added += 1;
         } else {
@@ -134,171 +135,129 @@ function HolidaySettings() {
       });
 
       updateHolidayList(nextHolidays);
-      setStatusOk(true);
-      setStatus(`✓ ${added} feriados adicionados${skipped ? `, ${skipped} já existiam` : ''} (${year})`);
+      showStatus(`✓ ${added} feriados adicionados${skipped ? `, ${skipped} já existiam` : ''} (${year})`, true);
     } catch {
-      setStatusOk(false);
-      setStatus('Erro ao carregar feriados. Verifica a ligação.');
+      showStatus('Erro ao carregar feriados. Verifica a ligação.', false);
     } finally {
       setLoading(false);
     }
   }
 
-  function addManualHoliday() {
+  function addManualHoliday(event: React.FormEvent) {
+    event.preventDefault();
     if (!manualDate.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-      alert('Data inválida. Use o formato dd/mm/aaaa.');
+      showStatus('Data inválida. Use o formato dd/mm/aaaa.', false);
       return;
     }
-
-    if (!holidays.some(item => item.date === manualDate)) {
+    if (!holidays.some((item) => item.date === manualDate)) {
       updateHolidayList([...holidays, { date: manualDate, name: manualName.trim() || 'Feriado' }]);
     }
-
     setManualDate('');
     setManualName('');
+    setStatus('');
   }
 
-  function removeHoliday(index: number) {
-    const updated = [...holidays];
-    updated.splice(index, 1);
-    updateHolidayList(updated);
+  function removeHoliday(holiday: (typeof holidays)[number]) {
+    updateHolidayList(holidays.filter((item) => item !== holiday));
   }
 
   const sortedHolidays = useMemo(
-    () => [...holidays].sort((a, b) =>
-      a.date.split('/').reverse().join('').localeCompare(b.date.split('/').reverse().join(''))
-    ),
+    () => [...holidays].sort((a, b) => a.date.split('/').reverse().join('').localeCompare(b.date.split('/').reverse().join(''))),
     [holidays],
   );
 
   return (
     <div className="holiday-settings">
-      <div className="settings-row-wrap" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-        <select
-          className="week-select"
-          value={selectedHolidayCountry}
-          onChange={event => {
-            const country = event.target.value;
-            setSelectedHolidayCountry(country);
-            localStorage.setItem('tt_holiday_country', country);
-            setSelectedHolidaySubdivision('');
-          }}
-          style={{ flex: '1 1 180px', minWidth: 140, height: 36 }}
-        >
-          <option value="">— País —</option>
-          {countries.map(country => (
-            <option key={country.countryCode} value={country.countryCode}>
-              {country.name}
-            </option>
-          ))}
-        </select>
-
-        {subdivisions.length > 0 && (
+      <div className="holiday-row">
+        <div className="field">
+          <label className="field-label" htmlFor="holCountry">País</label>
           <select
+            id="holCountry"
             className="week-select"
-            value={selectedHolidaySubdivision}
-            onChange={event => {
-              setSelectedHolidaySubdivision(event.target.value);
-              localStorage.setItem('tt_holiday_subdivision', event.target.value);
+            value={selectedHolidayCountry}
+            onChange={(event) => {
+              const country = event.target.value;
+              setSelectedHolidayCountry(country);
+              localStorage.setItem('tt_holiday_country', country);
+              setSelectedHolidaySubdivision('');
+              localStorage.setItem('tt_holiday_subdivision', '');
+              savePrefs();
             }}
-            style={{ flex: '1 1 180px', minWidth: 140, height: 36 }}
           >
-            <option value="">— Feriados nacionais (todos) —</option>
-            {subdivisions.map(subdivision => (
-              <option key={subdivision.code} value={subdivision.code}>
-                {subdivision.name}
-              </option>
+            <option value="">— País —</option>
+            {countries.map((country) => (
+              <option key={country.countryCode} value={country.countryCode}>{country.name}</option>
             ))}
           </select>
+        </div>
+
+        {subdivisions.length > 0 && (
+          <div className="field">
+            <label className="field-label" htmlFor="holSub">Região</label>
+            <select
+              id="holSub"
+              className="week-select"
+              value={selectedHolidaySubdivision}
+              onChange={(event) => {
+                setSelectedHolidaySubdivision(event.target.value);
+                localStorage.setItem('tt_holiday_subdivision', event.target.value);
+                savePrefs();
+              }}
+            >
+              <option value="">— Feriados nacionais (todos) —</option>
+              {subdivisions.map((subdivision) => (
+                <option key={subdivision.code} value={subdivision.code}>{subdivision.name}</option>
+              ))}
+            </select>
+          </div>
         )}
       </div>
 
       {selectedHolidayCountry && (
-        <div className="settings-row-wrap" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-          <select
-            className="week-select"
-            value={year}
-            onChange={event => setYear(Number(event.target.value))}
-            style={{ width: 110, height: 36 }}
-          >
-            {[currentYear - 1, currentYear, currentYear + 1].map(y => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            className="btn-save"
-            onClick={fetchHolidays}
-            disabled={loading}
-            style={{ minWidth: 164, height: 36 }}
-          >
-            {loading ? 'A carregar...' : 'Carregar feriados'}
+        <div className="holiday-row holiday-row-inline">
+          <div className="field holiday-year">
+            <label className="field-label" htmlFor="holYear">Ano</label>
+            <select id="holYear" className="week-select" value={year} onChange={(event) => setYear(Number(event.target.value))}>
+              {[currentYear - 1, currentYear, currentYear + 1].map((y) => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </div>
+          <button type="button" className="btn-primary" onClick={fetchHolidays} disabled={loading}>
+            {loading ? 'A carregar…' : 'Carregar feriados'}
           </button>
         </div>
       )}
 
-      {status && (
-        <div
-          style={{
-            fontSize: 12,
-            color: statusOk ? 'var(--ok)' : 'var(--danger)',
-            marginBottom: 10,
-          }}
-        >
-          {status}
+      <form className="holiday-row holiday-row-inline" onSubmit={addManualHoliday}>
+        <div className="field">
+          <label className="field-label" htmlFor="holDate">Data</label>
+          <input id="holDate" className="input" placeholder="dd/mm/aaaa" inputMode="numeric" value={manualDate} onChange={(event) => setManualDate(event.target.value)} />
         </div>
+        <div className="field holiday-name">
+          <label className="field-label" htmlFor="holName">Nome</label>
+          <input id="holName" className="input" placeholder="Nome do feriado…" value={manualName} onChange={(event) => setManualName(event.target.value)} />
+        </div>
+        <button className="btn-secondary" type="submit">+ Manual</button>
+      </form>
+
+      {status && (
+        <p className={`holiday-status ${statusOk ? 'ok' : 'error'}`} role="status">{status}</p>
       )}
 
-      <div className="settings-row-wrap" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <input
-          className="fi"
-          placeholder="dd/mm/aaaa"
-          value={manualDate}
-          onChange={event => setManualDate(event.target.value)}
-          style={{ flex: '1 1 120px', minWidth: 100, height: 36 }}
-        />
-        <input
-          className="fi"
-          placeholder="Nome do feriado..."
-          value={manualName}
-          onChange={event => setManualName(event.target.value)}
-          style={{ flex: '2 1 180px', minWidth: 120, height: 36 }}
-        />
-        <button
-          className="btn-save"
-          type="button"
-          onClick={addManualHoliday}
-          style={{ minWidth: 120, height: 36 }}
-        >
-          + Manual
-        </button>
-      </div>
-
-      <div className="holidays-list">
+      <ul className="holidays-list">
         {sortedHolidays.length === 0 ? (
-          <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center', padding: '10px 0' }}>
-            Sem feriados definidos.
-          </div>
+          <li className="holidays-empty">Sem feriados definidos.</li>
         ) : (
           sortedHolidays.map((holiday, index) => (
-            <div key={`${holiday.date}-${index}`} className="holiday-item">
-              <span>
-                <strong>{holiday.date}</strong> — {holiday.name}
-              </span>
-              <button
-                className="btn-holiday-del"
-                type="button"
-                onClick={() => removeHoliday(index)}
-                title="Remover"
-              >
-                <i className="ti ti-x" />
+            <li key={`${holiday.date}-${index}`} className="holiday-item">
+              <span className="tabular holiday-date">{holiday.date}</span>
+              <span className="holiday-item-name">{holiday.name}</span>
+              <button className="btn-icon del" type="button" onClick={() => removeHoliday(holiday)} aria-label={`Remover ${holiday.name}`} title="Remover">
+                <IconX size={16} stroke={1.75} />
               </button>
-            </div>
+            </li>
           ))
         )}
-      </div>
+      </ul>
     </div>
   );
 }
@@ -308,131 +267,113 @@ function AccountCard() {
   const { name, email } = getUserDisplay(currentUser);
   return (
     <section className="card account-card" aria-label="Conta">
-      <UserAvatar user={currentUser} size={56} />
+      <UserAvatar user={currentUser} size={64} />
       <div className="account-info">
         <div className="account-name">{name}</div>
         <div className="account-email">{email}</div>
       </div>
-      <button type="button" className="btn-secondary" onClick={() => supabase.auth.signOut()}>
+      <button type="button" className="btn-secondary account-logout" onClick={() => supabase.auth.signOut()}>
         <IconLogout size={18} stroke={1.75} /> Terminar sessão
       </button>
     </section>
   );
 }
 
+const THEME_OPTIONS: { value: ThemeMode; label: string; icon: typeof IconSun }[] = [
+  { value: 'light', label: 'Claro', icon: IconSun },
+  { value: 'dark', label: 'Escuro', icon: IconMoon },
+  { value: 'system', label: 'Sistema', icon: IconDeviceDesktop },
+];
+
 export default function Settings() {
   const {
-    showSync,
-    setShowSync,
-    showNotesDone,
-    setShowNotesDone,
-    notesCollapsed,
-    setNotesCollapsed,
-    showHolidays,
-    setShowHolidays,
-    userName,
-    setUserName,
+    showSync, setShowSync,
+    showNotesDone, setShowNotesDone,
+    notesCollapsed, setNotesCollapsed,
+    showHolidays, setShowHolidays,
+    userName, setUserName,
+    themeMode, setThemeMode,
     savePrefs,
   } = useApp();
 
   const [localName, setLocalName] = useState(userName);
-  const [localSync, setLocalSync] = useState(showSync);
-  const [localNotesDone, setLocalNotesDone] = useState(showNotesDone);
-  const [localCollapsed, setLocalCollapsed] = useState(notesCollapsed);
-  const [localHolidays, setLocalHolidays] = useState(showHolidays);
 
-  function save() {
-    setShowSync(localSync);
-    localStorage.setItem('tt_show_sync', String(localSync));
+  useEffect(() => setLocalName(userName), [userName]);
 
-    setShowNotesDone(localNotesDone);
-    localStorage.setItem('tt_notes_done', String(localNotesDone));
+  function persistBool(key: string, setter: (value: boolean) => void) {
+    return (value: boolean) => {
+      setter(value);
+      localStorage.setItem(key, String(value));
+      savePrefs();
+    };
+  }
 
-    setNotesCollapsed(localCollapsed);
-    localStorage.setItem('tt_notes_collapsed', String(localCollapsed));
-
-    setShowHolidays(localHolidays);
-    localStorage.setItem('tt_show_holidays', String(localHolidays));
-
-    setUserName(localName.trim());
-    localStorage.setItem('tt_user_name', localName.trim());
-
+  function commitName() {
+    const trimmed = localName.trim();
+    if (trimmed === userName) return;
+    setUserName(trimmed);
+    localStorage.setItem('tt_user_name', trimmed);
     savePrefs();
   }
 
   return (
-    <div className="panel settings-page">
+    <div className="settings-page">
       <AccountCard />
-      <div className="card" style={{ padding: 20 }}>
 
-        <div className="fi-wrapper" style={{ marginBottom: 16 }}>
-          <span className="fl-inner">Seu Nome</span>
+      <section className="card settings-section" aria-labelledby="setAppearance">
+        <h2 className="settings-title" id="setAppearance">Aparência</h2>
+        <div className="segmented theme-segmented" role="radiogroup" aria-label="Tema">
+          {THEME_OPTIONS.map(({ value, label, icon: IconCmp }) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={themeMode === value}
+              aria-pressed={themeMode === value}
+              onClick={() => setThemeMode(value)}
+            >
+              <IconCmp size={16} stroke={1.75} /> {label}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="card settings-section" aria-labelledby="setProfile">
+        <h2 className="settings-title" id="setProfile">Perfil</h2>
+        <div className="field">
+          <label className="field-label" htmlFor="setName">O teu nome</label>
           <input
-            className="fi"
+            id="setName"
+            className="input"
             type="text"
-            placeholder="Como quer ser chamado?"
+            placeholder="Como queres ser chamado?"
             value={localName}
-            onChange={event => setLocalName(event.target.value)}
+            onChange={(event) => setLocalName(event.target.value)}
+            onBlur={commitName}
+            onKeyDown={(event) => event.key === 'Enter' && (event.currentTarget as HTMLInputElement).blur()}
           />
-          <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 7, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <i className="ti ti-info-circle" style={{ fontSize: 12 }} />
-            Se deixar em branco, o nome é obtido automaticamente.
-          </div>
+          <p className="setting-hint">
+            <IconInfoCircle size={14} stroke={1.75} /> Se deixares em branco, o nome é obtido automaticamente.
+          </p>
         </div>
+      </section>
 
-        <div className="setting-section-title">Geral</div>
-        <div className="setting-group">
-          <ToggleRow
-            id="chkShowSync"
-            label="Mostrar coluna 'Registado no Sistema'"
-            checked={localSync}
-            onChange={setLocalSync}
-          />
-        </div>
+      <section className="card settings-section" aria-labelledby="setGeneral">
+        <h2 className="settings-title" id="setGeneral">Geral</h2>
+        <ToggleRow id="chkShowSync" label="Mostrar coluna 'Registado no Sistema'" checked={showSync} onChange={persistBool('tt_show_sync', setShowSync)} />
+      </section>
 
-        <div className="setting-section-title">Notas</div>
-        <div className="setting-group">
-          <ToggleRow
-            id="chkNotesDone"
-            label="Permitir marcar notas como feitas"
-            checked={localNotesDone}
-            onChange={setLocalNotesDone}
-          />
-          <ToggleRow
-            id="chkNotesCollapsed"
-            label="Notas colapsadas por padrão"
-            checked={localCollapsed}
-            onChange={setLocalCollapsed}
-          />
-        </div>
+      <section className="card settings-section" aria-labelledby="setNotes">
+        <h2 className="settings-title" id="setNotes">Notas</h2>
+        <ToggleRow id="chkNotesDone" label="Permitir marcar notas como feitas" checked={showNotesDone} onChange={persistBool('tt_notes_done', setShowNotesDone)} />
+        <ToggleRow id="chkNotesCollapsed" label="Notas colapsadas por padrão" checked={notesCollapsed} onChange={persistBool('tt_notes_collapsed', setNotesCollapsed)} />
+      </section>
 
-        <div className="setting-section-title">Calendário</div>
-        <div className="setting-group">
-          <div className="setting-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
-            <div style={{ display: 'flex', width: '100%', alignItems: 'center', gap: 12 }}>
-              <label htmlFor="chkHolidays" style={{ flex: 1, cursor: 'pointer' }}>
-                Mostrar feriados nos chips da semana
-              </label>
-              <label className="toggle-switch">
-                <input
-                  id="chkHolidays"
-                  type="checkbox"
-                  checked={localHolidays}
-                  onChange={event => setLocalHolidays(event.target.checked)}
-                />
-                <span className="toggle-slider" />
-              </label>
-            </div>
-            {localHolidays && <HolidaySettings />}
-          </div>
-        </div>
-
-        <div className="modal-actions" style={{ marginTop: 20 }}>
-          <button className="btn-save" type="button" onClick={save} style={{ width: '100%' }}>
-            Guardar
-          </button>
-        </div>
-      </div>
+      <section className="card settings-section" aria-labelledby="setCalendar">
+        <h2 className="settings-title" id="setCalendar">Calendário</h2>
+        <ToggleRow id="chkHolidays" label="Mostrar feriados" description="Na semana, no calendário e no início" checked={showHolidays} onChange={persistBool('tt_show_holidays', setShowHolidays)} />
+        {showHolidays && <HolidaySettings />}
+      </section>
     </div>
   );
 }
