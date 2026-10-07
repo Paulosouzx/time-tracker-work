@@ -14,6 +14,8 @@ import {
   IconCircle,
   IconCircleCheckFilled,
   IconPencilPlus,
+  IconChevronDown,
+  IconArchive,
 } from '@tabler/icons-react';
 import { useApp } from '../../context/AppContext';
 import RichTextEditor from '../NoteEditor/RichTextEditor';
@@ -138,14 +140,41 @@ function NoteList({
     setDraft('');
   }
 
-  const items = useMemo(() => {
+  const [drawerOpen, setDrawerOpen] = useState(() => localStorage.getItem('tt_float_done_open') === 'true');
+
+  const { active, done } = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return [...notes]
-      .sort((a, b) => Number(!!a.done) - Number(!!b.done) || noteTimestamp(b) - noteTimestamp(a))
+    const matching = [...notes]
+      .sort((a, b) => noteTimestamp(b) - noteTimestamp(a))
       .map((note) => ({ note, text: plainText(note.body) }))
-      .filter(({ note, text }) => !q || note.title.toLowerCase().includes(q) || text.toLowerCase().includes(q))
-      .slice(0, q ? 50 : 20);
+      .filter(({ note, text }) => !q || note.title.toLowerCase().includes(q) || text.toLowerCase().includes(q));
+    return {
+      active: matching.filter(({ note }) => !note.done).slice(0, q ? 50 : 30),
+      done: matching.filter(({ note }) => note.done),
+    };
   }, [notes, query]);
+
+  function toggleDrawer() {
+    setDrawerOpen((open) => {
+      localStorage.setItem('tt_float_done_open', String(!open));
+      return !open;
+    });
+  }
+
+  const showDrawer = drawerOpen || (query.trim() !== '' && done.length > 0);
+
+  function renderRow({ note, text }: { note: Note; text: string }) {
+    return (
+      <li key={note.id} className={`fn-row ${note.done ? 'done' : ''}`}>
+        <DoneToggle note={note} onToggle={onToggleDone} />
+        <button type="button" className="fn-item" onClick={() => onOpen(note.id)}>
+          <span className="fn-item-title">{note.title || 'Sem título'}</span>
+          {text && <span className="fn-item-snippet">{text}</span>}
+          <span className="fn-item-date tabular">{note.date}</span>
+        </button>
+      </li>
+    );
+  }
 
   return (
     <div className="fn-list-view">
@@ -181,22 +210,39 @@ function NoteList({
           <IconPencilPlus size={18} stroke={1.75} />
         </button>
       </form>
-      <ul className="fn-list" aria-label={query ? 'Resultados' : 'Notas recentes'}>
-        {items.length === 0 ? (
-          <li className="fn-empty">{query ? 'Nenhuma nota encontrada' : 'Ainda não tens notas'}</li>
-        ) : (
-          items.map(({ note, text }) => (
-            <li key={note.id} className={`fn-row ${note.done ? 'done' : ''}`}>
-              <DoneToggle note={note} onToggle={onToggleDone} />
-              <button type="button" className="fn-item" onClick={() => onOpen(note.id)}>
-                <span className="fn-item-title">{note.title || 'Sem título'}</span>
-                {text && <span className="fn-item-snippet">{text}</span>}
-                <span className="fn-item-date tabular">{note.date}</span>
-              </button>
+      <div className="fn-list">
+        <ul className="fn-list-group" aria-label={query ? 'Resultados' : 'Notas por fazer'}>
+          {active.length === 0 ? (
+            <li className="fn-empty">
+              {query ? 'Nenhuma nota por fazer encontrada' : done.length ? 'Tudo concluído! 🎉' : 'Ainda não tens notas'}
             </li>
-          ))
+          ) : (
+            active.map(renderRow)
+          )}
+        </ul>
+
+        {done.length > 0 && (
+          <div className="fn-drawer">
+            <button
+              type="button"
+              className="fn-drawer-toggle"
+              aria-expanded={showDrawer}
+              aria-controls="fn-done-list"
+              onClick={toggleDrawer}
+            >
+              <IconArchive size={16} stroke={1.75} aria-hidden="true" />
+              <span>Concluídas</span>
+              <span className="fn-drawer-count tabular">{done.length}</span>
+              <IconChevronDown size={16} stroke={1.75} className={`fn-drawer-chevron ${showDrawer ? 'open' : ''}`} aria-hidden="true" />
+            </button>
+            {showDrawer && (
+              <ul className="fn-list-group" id="fn-done-list" aria-label="Notas concluídas">
+                {done.map(renderRow)}
+              </ul>
+            )}
+          </div>
         )}
-      </ul>
+      </div>
     </div>
   );
 }

@@ -9,6 +9,7 @@ import {
   IconTrash,
   IconPlus,
   IconNotesOff,
+  IconArchive,
 } from '@tabler/icons-react';
 import { useApp } from '../../context/AppContext';
 import RichTextEditor from '../NoteEditor/RichTextEditor';
@@ -106,6 +107,7 @@ export default function NotesPanel() {
   const titleRef = useRef<HTMLInputElement>(null);
   const dragSource = useRef<string | null>(null);
   const loadedRef = useRef<{ title: string; body: string } | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(() => localStorage.getItem('tt_notes_done_open') === 'true');
 
   useEffect(() => {
     if (!noteToOpen) return;
@@ -231,6 +233,25 @@ export default function NotesPanel() {
     };
   }
 
+  const activeNotes = sortedNotes.filter((note) => !note.done);
+  const doneNotes = sortedNotes.filter((note) => note.done);
+
+  function renderCard(note: Note) {
+    return (
+      <NoteCard
+        key={note.id}
+        note={note}
+        editing={editingId === note.id}
+        onEdit={() => editNote(note)}
+        onDelete={() => removeNote(note.id)}
+        onToggleDone={() => toggleNoteDone(note.id)}
+        defaultCollapsed={notesCollapsed}
+        showDone={showNotesDone || !!note.done}
+        dragHandlers={createDragHandlers(note.id)}
+      />
+    );
+  }
+
   return (
     <div className="notes-page">
       <form className="card notes-form-card" onSubmit={saveNote} aria-label={editingId ? 'Editar nota' : 'Nova nota'} noValidate>
@@ -262,25 +283,38 @@ export default function NotesPanel() {
       </form>
 
       <section className="notes-list" aria-label="Notas">
-        {sortedNotes.length === 0 ? (
+        {activeNotes.length === 0 ? (
           <div className="card empty-state">
             <span className="empty-icon"><IconNotesOff size={26} stroke={1.75} /></span>
-            Ainda não tens notas
+            {doneNotes.length ? 'Tudo concluído! 🎉' : 'Ainda não tens notas'}
           </div>
         ) : (
-          sortedNotes.map((note) => (
-            <NoteCard
-              key={note.id}
-              note={note}
-              editing={editingId === note.id}
-              onEdit={() => editNote(note)}
-              onDelete={() => removeNote(note.id)}
-              onToggleDone={() => toggleNoteDone(note.id)}
-              defaultCollapsed={notesCollapsed}
-              showDone={showNotesDone}
-              dragHandlers={createDragHandlers(note.id)}
-            />
-          ))
+          activeNotes.map(renderCard)
+        )}
+
+        {doneNotes.length > 0 && (
+          <div className="notes-drawer">
+            <button
+              type="button"
+              className="notes-drawer-toggle"
+              aria-expanded={drawerOpen}
+              aria-controls="notes-done-list"
+              onClick={() => setDrawerOpen((open) => {
+                localStorage.setItem('tt_notes_done_open', String(!open));
+                return !open;
+              })}
+            >
+              <IconArchive size={18} stroke={1.75} aria-hidden="true" />
+              <span>Concluídas</span>
+              <span className="notes-drawer-count tabular">{doneNotes.length}</span>
+              {drawerOpen ? <IconChevronUp size={18} stroke={1.75} aria-hidden="true" /> : <IconChevronDown size={18} stroke={1.75} aria-hidden="true" />}
+            </button>
+            {drawerOpen && (
+              <div className="notes-drawer-list" id="notes-done-list">
+                {doneNotes.map(renderCard)}
+              </div>
+            )}
+          </div>
         )}
       </section>
     </div>
