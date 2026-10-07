@@ -369,7 +369,7 @@ export default function Settings() {
         <ToggleRow id="chkNotesCollapsed" label="Notas colapsadas por padrão" checked={notesCollapsed} onChange={persistBool('tt_notes_collapsed', setNotesCollapsed)} />
       </section>
 
-      <section className="card settings-section" aria-labelledby="setCalendar">
+      <section className="card settings-section settings-calendar" aria-labelledby="setCalendar">
         <h2 className="settings-title" id="setCalendar">Calendário</h2>
         <ToggleRow id="chkHolidays" label="Mostrar feriados" description="Na semana, no calendário e no início" checked={showHolidays} onChange={persistBool('tt_show_holidays', setShowHolidays)} />
         {showHolidays && <HolidaySettings />}

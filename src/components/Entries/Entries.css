@@ -56,10 +56,6 @@
   white-space: nowrap;
 }
 
-.entry-link {
-  flex-shrink: 0;
-}
-
 .entry-duration {
   flex-shrink: 0;
   font-size: 16px;

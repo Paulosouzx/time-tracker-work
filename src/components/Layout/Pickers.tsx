@@ -199,9 +199,10 @@ interface FloatInputProps {
   style?: React.CSSProperties;
   inputRef?: React.Ref<HTMLInputElement>;
   invalid?: boolean;
+  list?: string;
 }
 
-export function FloatInput({ label, id, type = 'text', placeholder, value, onChange, style, inputRef, invalid }: FloatInputProps) {
+export function FloatInput({ label, id, type = 'text', placeholder, value, onChange, style, inputRef, invalid, list }: FloatInputProps) {
   return (
     <div className="field" style={style}>
       <label className="field-label" htmlFor={id}>{label}</label>
@@ -213,6 +214,8 @@ export function FloatInput({ label, id, type = 'text', placeholder, value, onCha
         placeholder={placeholder}
         value={value}
         aria-invalid={invalid || undefined}
+        list={list}
+        autoComplete={list ? 'off' : undefined}
         onChange={(e) => onChange(e.target.value)}
       />
     </div>

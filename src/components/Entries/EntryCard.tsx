@@ -1,4 +1,4 @@
-import { IconExternalLink, IconPlayerPlay } from '@tabler/icons-react';
+import { IconExternalLink } from '@tabler/icons-react';
 import { Entry } from '../../types';
 import { fmtH } from '../../utils';
 import './Entries.css';
@@ -9,10 +9,9 @@ interface EntryCardProps {
   showDate?: boolean;
   onEdit: (entry: Entry) => void;
   onToggleSync: (entry: Entry, checked: boolean) => void;
-  onRepeat?: (entry: Entry) => void;
 }
 
-export default function EntryCard({ entry, showSync, showDate, onEdit, onToggleSync, onRepeat }: EntryCardProps) {
+export default function EntryCard({ entry, showSync, showDate, onEdit, onToggleSync }: EntryCardProps) {
   const title = entry.desc || entry.proj;
 
   return (
@@ -36,18 +35,12 @@ export default function EntryCard({ entry, showSync, showDate, onEdit, onToggleS
         </span>
       </button>
 
-      {entry.link && (
-        <a className="btn-icon entry-link" href={entry.link} target="_blank" rel="noopener noreferrer" aria-label={`Abrir link de ${title}`} title={entry.link}>
-          <IconExternalLink size={18} stroke={1.75} />
-        </a>
-      )}
-
       <span className="entry-duration tabular">{fmtH(entry.h)}</span>
 
-      {onRepeat && (
-        <button type="button" className="btn-play" onClick={() => onRepeat(entry)} aria-label={`Registar novamente: ${title}`} title="Registar novamente">
-          <IconPlayerPlay size={18} stroke={2} fill="currentColor" />
-        </button>
+      {entry.link && (
+        <a className="btn-play" href={entry.link} target="_blank" rel="noopener noreferrer" aria-label={`Abrir link da case: ${title}`} title={entry.link}>
+          <IconExternalLink size={20} stroke={2} />
+        </a>
       )}
     </article>
   );

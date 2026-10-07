@@ -27,6 +27,7 @@ export default function CalendarPanel() {
       label,
       date,
       key,
+      items: entries.filter((entry) => entry.date === key),
       hours: entries.filter((entry) => entry.date === key).reduce((sum, entry) => sum + entry.h, 0),
       holiday: showHolidays ? holidays.find((item) => item.date === key) : undefined,
     };
@@ -90,6 +91,59 @@ export default function CalendarPanel() {
             );
           })}
         </div>
+      </section>
+
+      <section className="cal-board" aria-label="Semana completa">
+        {week.map((day) => {
+          const isToday = day.key === today;
+          const isSelected = day.key === selectedKey;
+          return (
+            <div key={day.key} className={`cal-col ${isSelected ? 'selected' : ''} ${day.holiday ? 'holiday' : ''}`}>
+              <button
+                type="button"
+                className={`cal-col-head ${isToday ? 'today' : ''}`}
+                aria-pressed={isSelected}
+                aria-label={`${longDayLabel(day.date)}, ${fmtH(day.hours)}`}
+                onClick={() => setSelected(day.date)}
+              >
+                <span className="cal-strip-wday">{day.label}</span>
+                <span className="cal-strip-num tabular">{day.date.getDate()}</span>
+                <span className="cal-col-total tabular">{fmtH(day.hours)}</span>
+              </button>
+              {day.holiday && (
+                <div className="cal-col-holiday" title={day.holiday.name}>
+                  <IconConfetti size={14} stroke={1.75} /> {day.holiday.name}
+                </div>
+              )}
+              <div className="cal-col-body">
+                {day.items.map((entry) => (
+                  <button
+                    key={entry.id}
+                    type="button"
+                    className={`cal-block tone-${projectTone(entry.proj)}`}
+                    style={{ minHeight: Math.max(56, entry.h * HOUR_PX) }}
+                    onClick={() => setEditEntry(entry)}
+                    aria-label={`Editar ${entry.desc || entry.proj}, ${fmtH(entry.h)}`}
+                  >
+                    <span className="cal-block-title">{entry.desc || entry.proj}</span>
+                    <span className="cal-block-meta">
+                      <span>{entry.proj}</span>
+                      <span className="tabular">{fmtH(entry.h)}</span>
+                    </span>
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className="cal-col-add"
+                  onClick={() => { setPendingRegisterDate(day.date); setActiveTab('reg'); }}
+                  aria-label={`Registar em ${longDayLabel(day.date)}`}
+                >
+                  <IconPlus size={16} stroke={2} />
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </section>
 
       <section className="cal-dayview" aria-labelledby="calDayTitle">

@@ -5,7 +5,7 @@ import { TimePicker, CalendarPicker, FloatInput } from '../Layout/Pickers';
 import WeekSummary from '../Layout/WeekSummary';
 import EntryCard from '../Entries/EntryCard';
 import EntryEditModal from '../Entries/EntryEditModal';
-import { todayStr, toDStr, fmtH } from '../../utils';
+import { todayStr, toDStr, fmtH, sortEntriesDesc } from '../../utils';
 import { consumePendingRegisterDate } from '../../router';
 import { Entry } from '../../types';
 import './RegisterPanel.css';
@@ -48,6 +48,12 @@ export default function RegisterPanel() {
   const dayTotal = useMemo(() => dayEntries.reduce((sum, entry) => sum + entry.h, 0), [dayEntries]);
   const totalToday = useMemo(() => entries.filter((entry) => entry.date === today).reduce((sum, entry) => sum + entry.h, 0), [entries, today]);
   const progress = Math.min(100, Math.round((totalToday / 8) * 100));
+  const knownProjects = useMemo(() => {
+    const seen = new Set<string>();
+    sortEntriesDesc(entries).forEach((entry) => entry.proj && seen.add(entry.proj));
+    return [...seen];
+  }, [entries]);
+  const projectPlaceholder = knownProjects[0] ? `ex: ${knownProjects[0]}` : 'Nome do projeto';
 
   function addEntry(event: React.FormEvent) {
     event.preventDefault();
@@ -78,17 +84,6 @@ export default function RegisterPanel() {
     setDate(new Date());
   }
 
-  function repeatEntry(entry: Entry) {
-    setHours(entry.h);
-    setProject(entry.proj);
-    setDescription(entry.desc);
-    setLink(entry.link || '');
-    setDate(new Date());
-    setError('');
-    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    projectRef.current?.focus({ preventScroll: true });
-  }
-
   function updateSync(entry: Entry, checked: boolean) {
     saveEntries(entries.map((item) => (item.id === entry.id ? { ...item, sync: checked } : item)));
   }
@@ -109,12 +104,16 @@ export default function RegisterPanel() {
               <FloatInput
                 label="Projeto"
                 id="eProj"
-                placeholder="ex: Firstbike"
+                placeholder={projectPlaceholder}
+                list="knownProjects"
                 value={project}
                 onChange={(value) => { setProject(value); if (error) setError(''); }}
                 inputRef={projectRef}
                 invalid={!!error}
               />
+              <datalist id="knownProjects">
+                {knownProjects.map((name) => <option key={name} value={name} />)}
+              </datalist>
               {error && <p className="form-error" role="alert">{error}</p>}
               <FloatInput label="Descrição" id="eDesc" placeholder="O que foi feito…" value={description} onChange={setDescription} />
               <FloatInput label="Link da case (opcional)" id="eLink" type="url" placeholder="https://…" value={link} onChange={setLink} />
@@ -158,7 +157,6 @@ export default function RegisterPanel() {
                     showSync={showSync}
                     onEdit={setEditEntry}
                     onToggleSync={updateSync}
-                    onRepeat={repeatEntry}
                   />
                 ))}
               </div>
