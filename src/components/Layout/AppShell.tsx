@@ -1,5 +1,6 @@
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import {
+  IconAlertCircle,
   IconHome,
   IconCalendar,
   IconChartBar,
@@ -110,7 +111,7 @@ function NavLink({ item, compact }: { item: NavItem; compact?: boolean }) {
 }
 
 export default function AppShell({ children }: { children: ReactNode }) {
-  const { currentUser, activeTab, setActiveTab } = useApp();
+  const { currentUser, activeTab, setActiveTab, loadError, retryLoad } = useApp();
   const { name } = getUserDisplay(currentUser);
 
   return (
@@ -144,6 +145,13 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </header>
 
         <main className="content" id="main">
+          {loadError && (
+            <div className="error-state load-error" role="alert">
+              <IconAlertCircle size={20} stroke={1.75} />
+              <span>{loadError}</span>
+              <button type="button" className="btn-secondary" onClick={retryLoad}>Tentar novamente</button>
+            </div>
+          )}
           {children}
         </main>
       </div>

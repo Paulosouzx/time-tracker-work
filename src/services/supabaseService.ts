@@ -16,11 +16,16 @@ export interface PrefsPayload {
 }
 
 export async function loadAppData(uid: string) {
-  const [{ data: entriesData }, { data: notesData }, { data: prefsData }] = await Promise.all([
+  const [entriesRes, notesRes, prefsRes] = await Promise.all([
     supabase.from('tt_entries').select('*').eq('user_id', uid),
     supabase.from('tt_notes').select('*').eq('user_id', uid),
-    supabase.from('tt_prefs').select('*').eq('user_id', uid).single(),
+    supabase.from('tt_prefs').select('*').eq('user_id', uid).maybeSingle(),
   ]);
+  const failed = entriesRes.error || notesRes.error || prefsRes.error;
+  if (failed) throw failed;
+  const entriesData = entriesRes.data;
+  const notesData = notesRes.data;
+  const prefsData = prefsRes.data;
 
   const entries = Array.isArray(entriesData)
     ? entriesData.map((r: any) => r.data as Entry)

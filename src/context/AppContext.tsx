@@ -62,6 +62,8 @@ interface AppContextType {
   themeMode: ThemeMode;
   setThemeMode: (mode: ThemeMode) => void;
   savePrefs: () => void;
+  loadError: string | null;
+  retryLoad: () => void;
 }
 
 const AppContext = createContext<AppContextType>(null!);
@@ -69,6 +71,7 @@ const AppContext = createContext<AppContextType>(null!);
 export function AppProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const [entries, setEntries] = useState<Entry[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -142,6 +145,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [themeMode]);
 
   async function loadFromSupabase(uid: string) {
+    setLoadError(null);
     try {
       const { entries: entriesData, notes: notesData, prefs } = await loadAppData(uid);
 
@@ -191,6 +195,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     } catch (e) {
       console.warn('Supabase load error:', e);
+      setLoadError('Não foi possível carregar os teus dados. Verifica a ligação e tenta novamente.');
     }
   }
 
@@ -228,6 +233,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }, 1000);
   }, [currentUser]);
 
+  const retryLoad = useCallback(() => {
+    if (currentUser) loadFromSupabase(currentUser.id);
+  }, [currentUser]);
+
   const setThemeMode = useCallback((mode: ThemeMode) => {
     setThemeModeState(mode);
     savePrefs();
@@ -250,6 +259,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       selectedHolidaySubdivision, setSelectedHolidaySubdivision,
       themeMode, setThemeMode,
       savePrefs,
+      loadError, retryLoad,
     }}>
       {children}
     </AppContext.Provider>
