@@ -1,0 +1,255 @@
+:root {
+  --nav-h: 64px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --side-w: 248px;
+}
+
+.shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.shell-main {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: calc(16px + env(safe-area-inset-top, 0px)) 20px 12px;
+  background: var(--bg);
+}
+
+.header-title {
+  min-width: 0;
+}
+
+.header-title h1 {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.header-date {
+  text-transform: capitalize;
+}
+
+.header-avatar {
+  flex-shrink: 0;
+  border-radius: 50%;
+  padding: 2px;
+  border: 2px solid transparent;
+  transition: border-color 0.15s;
+}
+
+.header-avatar.active {
+  border-color: var(--primary);
+}
+
+.user-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--primary);
+  color: var(--primary-contrast);
+  font-weight: 600;
+}
+
+.content {
+  flex: 1;
+  width: 100%;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 8px 20px calc(var(--nav-h) + var(--safe-bottom) + 32px);
+}
+
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  display: flex;
+  height: calc(var(--nav-h) + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+
+.bottom-nav-item .nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 30px;
+  border-radius: var(--radius-pill);
+  transition: background 0.15s;
+}
+
+.bottom-nav-item.active {
+  color: var(--primary);
+}
+
+.bottom-nav-item.active .nav-icon {
+  background: var(--primary-soft);
+}
+
+.nav-icon {
+  position: relative;
+}
+
+.nav-badge {
+  position: absolute;
+  top: -2px;
+  right: 6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.side-nav {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  :root {
+    --nav-h: 0px;
+  }
+
+  .bottom-nav {
+    display: none;
+  }
+
+  .side-nav {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: var(--side-w);
+    padding: 24px 16px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+  }
+
+  .shell-main {
+    margin-left: var(--side-w);
+  }
+
+  .app-header {
+    padding: 28px 32px 16px;
+  }
+
+  .header-title h1 {
+    font-size: 28px;
+  }
+
+  .content {
+    padding: 8px 32px 48px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 8px;
+  }
+
+  .brand-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    background: var(--primary);
+    color: var(--primary-contrast);
+  }
+
+  .brand-name {
+    font-size: 17px;
+    font-weight: 600;
+  }
+
+  .side-nav-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .side-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 46px;
+    padding: 0 14px;
+    border-radius: var(--radius-pill);
+    color: var(--text-muted);
+    font-weight: 500;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .side-nav-item:hover {
+    background: var(--surface-muted);
+    color: var(--text);
+  }
+
+  .side-nav-item.active {
+    background: var(--primary);
+    color: var(--primary-contrast);
+  }
+
+  .side-nav-item .nav-badge {
+    top: -6px;
+    right: -10px;
+  }
+
+  .side-nav-item .nav-icon {
+    display: inline-flex;
+  }
+}

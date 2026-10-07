@@ -23,4 +23,4 @@ export interface Holiday {
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 
-export type TabId = 'reg' | 'dash' | 'hist' | 'notes';
+export type TabId = 'reg' | 'cal' | 'dash' | 'hist' | 'notes' | 'profile';

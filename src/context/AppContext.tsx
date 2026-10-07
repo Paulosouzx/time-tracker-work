@@ -10,6 +10,7 @@ import React, {
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../supabase/supabaseClient';
 import { Entry, Note, Holiday, ThemeMode, TabId } from '../types';
+import { tabFromPath, pushRoute } from '../router';
 import { loadJson, loadBool, loadString } from '../services/localStorageService';
 import {
   applyTheme,
@@ -89,7 +90,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return mode;
   });
 
-  const [activeTab, setActiveTab] = useState<TabId>('reg');
+  const [activeTab, setActiveTabState] = useState<TabId>(() => tabFromPath(window.location.pathname));
+
+  useEffect(() => {
+    const onPop = () => setActiveTabState(tabFromPath(window.location.pathname));
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
+  const setActiveTab = useCallback((tab: TabId) => {
+    pushRoute(tab);
+    setActiveTabState(tab);
+    window.scrollTo({ top: 0 });
+  }, []);
 
   const saveEntriesTimer = useRef<ReturnType<typeof setTimeout>>();
   const saveNotesTimer = useRef<ReturnType<typeof setTimeout>>();

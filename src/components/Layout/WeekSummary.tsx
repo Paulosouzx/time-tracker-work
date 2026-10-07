@@ -1,8 +1,7 @@
 import { useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { todayStr, toDStr, getWeekKey, fmtH } from '../../utils';
-import { TabId } from '../../types';
-import './Tabs.css';
+import './WeekSummary.css';
 
 const DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 
@@ -11,7 +10,7 @@ function getWeekStartDate(weekKey: string) {
   return new Date(year, month - 1, day);
 }
 
-export function WeekSummary() {
+export default function WeekSummary() {
   const { entries, holidays, showHolidays, setActiveTab, activeTab } = useApp();
   const today = todayStr();
   const weekKey = getWeekKey(today);
@@ -72,34 +71,6 @@ export function WeekSummary() {
           </button>
         ))}
       </div>
-    </div>
-  );
-}
-
-export default function Tabs() {
-  const { activeTab, setActiveTab, notes } = useApp();
-  const activeNotes = useMemo(() => notes.filter(note => !note.done).length, [notes]);
-
-  const tabs: { id: TabId; label: string }[] = [
-    { id: 'reg', label: 'Registar' },
-    { id: 'dash', label: 'Dashboard' },
-    { id: 'hist', label: 'Histórico' },
-    { id: 'notes', label: 'Notas' },
-  ];
-
-  return (
-    <div className="tabs">
-      {tabs.map(tab => (
-        <button
-          key={tab.id}
-          type="button"
-          className={`tab ${activeTab === tab.id ? 'active' : ''}`}
-          onClick={() => setActiveTab(tab.id)}
-        >
-          {tab.label}
-          {tab.id === 'notes' && activeNotes > 0 && <span className="notes-badge">{activeNotes}</span>}
-        </button>
-      ))}
     </div>
   );
 }

@@ -43,7 +43,7 @@ export default function Auth() {
     if (savedEmail) setLastGoogleLabel(savedEmail);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.href },
+      options: { redirectTo: window.location.origin },
     });
     if (error) setStatus({ type: 'error', message: error.message });
     setLoading(false);

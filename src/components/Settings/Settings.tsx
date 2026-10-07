@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import { IconLogout } from '@tabler/icons-react';
 import { useApp } from '../../context/AppContext';
+import { supabase } from '../../supabase/supabaseClient';
+import UserAvatar, { getUserDisplay } from '../Layout/UserAvatar';
 import './Settings.css';
 
 const NAGER_BASE = 'https://date.nager.at/api/v3';
@@ -300,7 +303,24 @@ function HolidaySettings() {
   );
 }
 
-export default function Settings({ onClose }: { onClose: () => void }) {
+function AccountCard() {
+  const { currentUser } = useApp();
+  const { name, email } = getUserDisplay(currentUser);
+  return (
+    <section className="card account-card" aria-label="Conta">
+      <UserAvatar user={currentUser} size={56} />
+      <div className="account-info">
+        <div className="account-name">{name}</div>
+        <div className="account-email">{email}</div>
+      </div>
+      <button type="button" className="btn-secondary" onClick={() => supabase.auth.signOut()}>
+        <IconLogout size={18} stroke={1.75} /> Terminar sessão
+      </button>
+    </section>
+  );
+}
+
+export default function Settings() {
   const {
     showSync,
     setShowSync,
@@ -338,18 +358,12 @@ export default function Settings({ onClose }: { onClose: () => void }) {
     localStorage.setItem('tt_user_name', localName.trim());
 
     savePrefs();
-    onClose();
   }
 
   return (
-    <div className="modal-bg open" onClick={event => event.target === event.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 520 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-          <h2 style={{ margin: 0 }}>Configurações</h2>
-          <button className="btn-icon" type="button" onClick={onClose}>
-            <i className="ti ti-x" />
-          </button>
-        </div>
+    <div className="panel settings-page">
+      <AccountCard />
+      <div className="card" style={{ padding: 20 }}>
 
         <div className="fi-wrapper" style={{ marginBottom: 16 }}>
           <span className="fl-inner">Seu Nome</span>
@@ -415,7 +429,7 @@ export default function Settings({ onClose }: { onClose: () => void }) {
 
         <div className="modal-actions" style={{ marginTop: 20 }}>
           <button className="btn-save" type="button" onClick={save} style={{ width: '100%' }}>
-            Guardar e Fechar
+            Guardar
           </button>
         </div>
       </div>
