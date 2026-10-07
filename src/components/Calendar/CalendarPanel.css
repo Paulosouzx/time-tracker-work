@@ -1,0 +1,169 @@
+.calendar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 720px;
+}
+
+.cal-week {
+  padding: 16px;
+}
+
+.cal-week-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-left: 4px;
+}
+
+.cal-week-title {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.cal-week-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cal-today-btn {
+  height: 32px;
+  padding: 0 14px;
+}
+
+.cal-strip {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.cal-strip-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+  border-radius: var(--radius-md);
+  transition: background 0.15s;
+}
+
+.cal-strip-day:hover {
+  background: var(--surface-muted);
+}
+
+.cal-strip-day.selected {
+  background: var(--surface-muted);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.cal-strip-wday {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.cal-strip-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.cal-strip-day.today .cal-strip-num {
+  background: var(--primary);
+  color: var(--primary-contrast);
+}
+
+.cal-strip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.cal-strip-dot.has-hours {
+  background: var(--primary);
+}
+
+.cal-strip-dot.holiday {
+  background: var(--ev-peach-text);
+}
+
+.cal-dayview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cal-holiday {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  background: var(--ev-peach-bg);
+  color: var(--ev-peach-text);
+  font-weight: 500;
+}
+
+.cal-blocks {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: 18px;
+  border-left: 2px solid var(--border);
+  margin-left: 6px;
+}
+
+.cal-block {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  text-align: left;
+  transition: filter 0.15s;
+}
+
+.cal-block:hover {
+  filter: brightness(0.97);
+}
+
+.cal-block-title {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.cal-block-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.tone-lime {
+  background: var(--ev-lime-bg);
+  color: var(--ev-lime-text);
+}
+
+.tone-peach {
+  background: var(--ev-peach-bg);
+  color: var(--ev-peach-text);
+}
+
+.tone-rose {
+  background: var(--ev-rose-bg);
+  color: var(--ev-rose-text);
+}
+
+.cal-add {
+  align-self: flex-start;
+}
