@@ -88,12 +88,12 @@
 }
 
 .theme-picker-item.active {
-  background: var(--accent-light);
-  color: var(--accent);
+  background: var(--primary-soft);
+  color: var(--primary);
 }
 
 .theme-picker-item.custom-plus {
-  color: var(--accent);
+  color: var(--primary);
   font-weight: 600;
   justify-content: center;
   margin-top: 2px;
@@ -134,7 +134,7 @@
 }
 
 .btn-control:hover {
-  border-color: var(--accent);
+  border-color: var(--primary);
   transform: scale(1.05);
 }
 
@@ -156,7 +156,7 @@
 
 .theme-icon.active {
   display: flex;
-  background: var(--accent);
+  background: var(--primary);
   color: #fff;
   animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
@@ -185,14 +185,14 @@
 }
 
 .user-avatar:hover {
-  border-color: var(--accent);
+  border-color: var(--primary);
 }
 
 .user-avatar-placeholder {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;

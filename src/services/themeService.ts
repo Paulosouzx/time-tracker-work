@@ -1,94 +1,59 @@
-import { CustomTheme, ThemeId } from '../types';
-import { darkenHex, hexWithAlpha, blendHex } from '../utils';
-
-export const BASE_THEMES = [
-  { id: 'light', name: 'Claro', color: '#534AB7', icon: 'ti-sun' },
-  { id: 'dark', name: 'Escuro', color: '#1A192A', icon: 'ti-moon' },
-  { id: 'nature', name: 'Natureza', color: '#2E8550', icon: 'ti-leaf' },
-  { id: 'ocean', name: 'Oceano', color: '#0F609B', icon: 'ti-droplet' },
-  { id: 'midnight', name: 'Meia-noite', color: '#0D0D1A', icon: 'ti-stars' },
-  { id: 'rose', name: 'Rosa', color: '#E8547A', icon: 'ti-heart' },
-  { id: 'amber', name: 'Âmbar', color: '#D97B00', icon: 'ti-flame' },
-];
-
-export const FONTS = [
-  { id: 'system', name: 'Sistema', stack: '-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif', preview: 'Aa Registo' },
-  { id: 'inter', name: 'Inter', stack: '"Inter",sans-serif', preview: 'Aa Registo' },
-  { id: 'geist', name: 'Geist', stack: '"Geist",sans-serif', preview: 'Aa Registo' },
-  { id: 'mono', name: 'Mono', stack: '"JetBrains Mono","Fira Mono",monospace', preview: 'Aa 08:30' },
-  { id: 'serif', name: 'Serif', stack: '"Georgia",serif', preview: 'Aa Registo' },
-  { id: 'nunito', name: 'Nunito', stack: '"Nunito",sans-serif', preview: 'Aa Registo' },
-];
+import { ThemeMode } from '../types';
 
 const THEME_KEY = 'tt_theme';
-const CUSTOM_CSS_VARS = [
-  '--custom-bg',
-  '--custom-surface',
-  '--custom-surface2',
-  '--custom-text1',
-  '--custom-text2',
-  '--custom-text3',
-  '--custom-border',
-  '--custom-input-border',
-  '--custom-accent',
-  '--custom-accent-dark',
-  '--custom-accent-light',
-];
+const DARK_LEGACY = new Set(['dark', 'midnight']);
+const darkQuery = typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)') : null;
 
-function applyCustomCSSVars(colors: CustomTheme['colors']) {
-  const root = document.documentElement;
-  const accentDark = darkenHex(colors.accent, 20);
-  const accentLight = hexWithAlpha(colors.accent, 0.12);
-  const surface2 = blendHex(colors.bg, colors.surface, 0.5);
-  const inputBorder = hexWithAlpha(colors.accent, 0.2);
-  const text3 = blendHex(colors.text2, colors.bg, 0.35);
-
-  root.style.setProperty('--custom-bg', colors.bg);
-  root.style.setProperty('--custom-surface', colors.surface);
-  root.style.setProperty('--custom-surface2', surface2);
-  root.style.setProperty('--custom-text1', colors.text);
-  root.style.setProperty('--custom-text2', colors.text2);
-  root.style.setProperty('--custom-text3', text3);
-  root.style.setProperty('--custom-border', colors.border);
-  root.style.setProperty('--custom-input-border', inputBorder);
-  root.style.setProperty('--custom-accent', colors.accent);
-  root.style.setProperty('--custom-accent-dark', accentDark);
-  root.style.setProperty('--custom-accent-light', accentLight);
-  root.style.setProperty('--custom-bg-accent-1', hexWithAlpha(colors.accent, 0.18));
-  root.style.setProperty('--custom-bg-accent-2', hexWithAlpha(colors.accent, 0.12));
-  root.style.setProperty('--custom-bg-accent-3', hexWithAlpha(colors.accent, 0.08));
-  root.style.setProperty('--custom-bg-accent-4', hexWithAlpha(colors.accent, 0.06));
+function isDarkHex(hex: string): boolean {
+  const h = hex.replace('#', '');
+  if (h.length !== 6) return false;
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.substr(i, 2), 16));
+  return 0.299 * r + 0.587 * g + 0.114 * b < 128;
 }
 
-export function applyTheme(id: ThemeId, customThemes: CustomTheme[], persist = true): ThemeId {
-  const base = BASE_THEMES.find((t) => t.id === id);
-  const custom = customThemes.find((t) => t.id === id);
-
-  if (!base && !custom) {
-    id = 'light';
+export function migrateThemeValue(value: unknown, customThemes?: unknown): ThemeMode {
+  if (value === 'light' || value === 'dark' || value === 'system') return value;
+  if (typeof value !== 'string' || !value) return 'system';
+  if (DARK_LEGACY.has(value)) return 'dark';
+  if (value.startsWith('custom') && Array.isArray(customThemes)) {
+    const custom = customThemes.find((t: any) => t?.id === value) as any;
+    if (custom?.colors?.bg) return isDarkHex(custom.colors.bg) ? 'dark' : 'light';
   }
-
-  if (custom) {
-    document.documentElement.setAttribute('data-theme', 'custom');
-    applyCustomCSSVars(custom.colors);
-  } else {
-    document.documentElement.setAttribute('data-theme', id);
-    CUSTOM_CSS_VARS.forEach((p) => document.documentElement.style.removeProperty(p));
+  if (value === 'custom' || value.startsWith('custom')) {
+    try {
+      const stored = JSON.parse(localStorage.getItem('tt_custom_themes') || '[]');
+      const custom = stored.find((t: any) => t?.id === value);
+      if (custom?.colors?.bg) return isDarkHex(custom.colors.bg) ? 'dark' : 'light';
+    } catch {
+      return 'light';
+    }
   }
-
-  if (persist) {
-    localStorage.setItem(THEME_KEY, id);
-  }
-
-  return id;
+  return 'light';
 }
 
-export function getSavedTheme(): ThemeId | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem(THEME_KEY) as ThemeId | null;
+export function resolveTheme(mode: ThemeMode): 'light' | 'dark' {
+  if (mode === 'system') return darkQuery?.matches ? 'dark' : 'light';
+  return mode;
 }
 
-export function applyFont(id: string) {
-  const font = FONTS.find((x) => x.id === id) || FONTS[0];
-  document.body.style.fontFamily = font.stack;
+export function applyTheme(mode: ThemeMode) {
+  const resolved = resolveTheme(mode);
+  document.documentElement.setAttribute('data-theme', resolved);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resolved === 'dark' ? '#0F1714' : '#F7F4E9');
+  localStorage.setItem(THEME_KEY, mode);
+}
+
+export function getSavedTheme(): ThemeMode {
+  if (typeof window === 'undefined') return 'system';
+  return migrateThemeValue(localStorage.getItem(THEME_KEY));
+}
+
+export function onSystemThemeChange(cb: () => void) {
+  darkQuery?.addEventListener('change', cb);
+  return () => darkQuery?.removeEventListener('change', cb);
+}
+
+export function cleanupLegacyThemeStorage() {
+  ['tt_custom_themes', 'tt_custom_font_enabled', 'tt_custom_font'].forEach((k) => localStorage.removeItem(k));
+  document.documentElement.removeAttribute('style');
 }

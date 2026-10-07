@@ -29,7 +29,7 @@
   height: 44px;
   border-radius: var(--radius-sm);
   border: none;
-  background: var(--accent);
+  background: var(--primary);
   color: #fff;
   font-size: 14px;
   font-weight: 600;
@@ -43,7 +43,7 @@
 }
 
 .btn-add:hover {
-  background: var(--accent-dark);
+  background: var(--primary-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
 }

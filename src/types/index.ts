@@ -21,27 +21,6 @@ export interface Holiday {
   name: string;
 }
 
-export interface CustomTheme {
-  id: string;
-  name: string;
-  colors: {
-    bg: string;
-    surface: string;
-    accent: string;
-    text: string;
-    text2: string;
-    border: string;
-  };
-}
-
-export type ThemeId =
-  | 'light'
-  | 'dark'
-  | 'nature'
-  | 'ocean'
-  | 'midnight'
-  | 'rose'
-  | 'amber'
-  | string; // custom_*
+export type ThemeMode = 'light' | 'dark' | 'system';
 
 export type TabId = 'reg' | 'dash' | 'hist' | 'notes';

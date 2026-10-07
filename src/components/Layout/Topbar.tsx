@@ -1,22 +1,9 @@
 import { createPortal } from 'react-dom';
-import { useEffect, useMemo, useRef, useState, type ElementType, type RefObject } from 'react';
-import {
-  IconSettings,
-  IconLogout,
-  IconPalette,
-  IconTrash,
-  IconPlus,
-  IconX,
-  IconSun,
-  IconMoon,
-  IconLeaf,
-  IconDroplet,
-  IconStars,
-  IconHeart,
-  IconFlame,
-} from '@tabler/icons-react';
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { IconSettings, IconLogout, IconSun, IconMoon, IconDeviceDesktop } from '@tabler/icons-react';
 import { supabase } from '../../supabase/supabaseClient';
-import { useApp, BASE_THEMES } from '../../context/AppContext';
+import { useApp } from '../../context/AppContext';
+import { ThemeMode } from '../../types';
 import { getGreeting } from '../../utils';
 import Settings from '../Settings/Settings';
 import './Topbar.css';
@@ -101,197 +88,21 @@ function UserAvatar() {
   );
 }
 
-const themeIconMap: Record<string, ElementType> = {
-  light: IconSun,
-  dark: IconMoon,
-  nature: IconLeaf,
-  ocean: IconDroplet,
-  midnight: IconStars,
-  rose: IconHeart,
-  amber: IconFlame,
+const THEME_CYCLE: ThemeMode[] = ['light', 'dark', 'system'];
+const THEME_META = {
+  light: { icon: IconSun, label: 'Tema claro' },
+  dark: { icon: IconMoon, label: 'Tema escuro' },
+  system: { icon: IconDeviceDesktop, label: 'Seguir o sistema' },
 };
 
-function ThemePicker() {
-  const { currentTheme, customThemes, applyTheme, deleteCustomTheme } = useApp();
-  const [open, setOpen] = useState(false);
-  const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
-  const [showCustomModal, setShowCustomModal] = useState(false);
-  const pickerRef = useRef<HTMLDivElement>(null);
-  useClickOutside(pickerRef, () => setOpen(false));
-
-  function handleToggle() {
-    if (!open && pickerRef.current) {
-      const rect = pickerRef.current.getBoundingClientRect();
-      const menuWidth = 280; // approximate menu width
-      const viewportWidth = window.innerWidth;
-      let right = viewportWidth - rect.right;
-      
-      // Ensure menu doesn't go off-screen on mobile
-      if (right + menuWidth > viewportWidth - 16) {
-        right = Math.max(16, viewportWidth - menuWidth - 16);
-      }
-      
-      setMenuPos({ top: rect.bottom + 8, right });
-    }
-    setOpen(prev => !prev);
-  }
-
-  const ActiveThemeIcon = useMemo(() => {
-    return customThemes.some(theme => theme.id === currentTheme)
-      ? IconPalette
-      : themeIconMap[currentTheme] || IconSun;
-  }, [currentTheme, customThemes]);
-
+function ThemeToggle() {
+  const { themeMode, setThemeMode } = useApp();
+  const { icon: Icon, label } = THEME_META[themeMode];
+  const next = THEME_CYCLE[(THEME_CYCLE.indexOf(themeMode) + 1) % THEME_CYCLE.length];
   return (
-    <>
-      <div className="theme-picker-wrap" ref={pickerRef}>
-        <button className="btn-control" type="button" onClick={handleToggle} title="Escolher tema">
-          <span className="theme-icon active">
-            <ActiveThemeIcon size={18} stroke={2} />
-          </span>
-        </button>
-      </div>
-
-      {open && createPortal(
-        <div className="theme-picker-dropdown open" style={{ position: 'fixed', top: menuPos.top, right: menuPos.right, zIndex: 9999 }}>
-          {BASE_THEMES.map(theme => {
-            const ThemeIcon = themeIconMap[theme.id] || IconPalette;
-            return (
-              <button
-                key={theme.id}
-                type="button"
-                className={`theme-picker-item ${currentTheme === theme.id ? 'active' : ''}`}
-                onClick={() => { applyTheme(theme.id); setOpen(false); }}
-              >
-                <span className="theme-swatch" style={{ background: theme.color }} />
-                <ThemeIcon size={16} stroke={2} />
-                <span>{theme.name}</span>
-              </button>
-            );
-          })}
-
-          {customThemes.length > 0 && (
-            <>
-              <div className="theme-picker-divider" />
-              {customThemes.map(theme => (
-                <button
-                  key={theme.id}
-                  type="button"
-                  className={`theme-picker-item ${currentTheme === theme.id ? 'active' : ''}`}
-                  onClick={() => { applyTheme(theme.id); setOpen(false); }}
-                >
-                  <span className="theme-swatch" style={{ background: theme.colors.accent }} />
-                  <IconPalette size={16} stroke={2} />
-                  <span className="theme-picker-name">{theme.name}</span>
-                  <button
-                    className="delete-theme-btn"
-                    type="button"
-                    title="Remover Tema"
-                    onClick={event => {
-                      event.stopPropagation();
-                      if (confirm('Apagar este tema?')) deleteCustomTheme(theme.id);
-                    }}
-                  >
-                    <IconTrash size={14} stroke={2} />
-                  </button>
-                </button>
-              ))}
-            </>
-          )}
-
-          <div className="theme-picker-divider" />
-          <button type="button" className="theme-picker-item custom-plus" onClick={() => { setOpen(false); setShowCustomModal(true); }}>
-            <IconPlus size={14} stroke={2} /> Criar Novo Tema
-          </button>
-        </div>,
-        document.body
-      )}
-
-      {showCustomModal && <CustomThemeModal onClose={() => setShowCustomModal(false)} />}
-    </>
-  );
-}
-
-function CustomThemeModal({ onClose }: { onClose: () => void }) {
-  const { addCustomTheme, savePrefs } = useApp();
-  const [name, setName] = useState('');
-  const [colors, setColors] = useState({
-    bg: '#F8F7FF',
-    surface: '#FFFFFF',
-    accent: '#534AB7',
-    text: '#1a1a2e',
-    text2: '#5f5c7a',
-    border: '#E2E0F0',
-  });
-
-  function updateColor(key: keyof typeof colors, value: string) {
-    setColors(prev => ({ ...prev, [key]: value }));
-  }
-
-  function saveTheme() {
-    if (!name.trim()) {
-      alert('Por favor, dá um nome ao teu tema.');
-      return;
-    }
-
-    addCustomTheme({ id: `custom_${Date.now()}`, name: name.trim(), colors });
-    savePrefs();
-    onClose();
-  }
-
-  const fields = [
-    { key: 'bg', label: 'Fundo' },
-    { key: 'surface', label: 'Surface' },
-    { key: 'accent', label: 'Accent' },
-    { key: 'text', label: 'Texto Principal' },
-    { key: 'text2', label: 'Texto Secundário' },
-    { key: 'border', label: 'Borda' },
-  ] as const;
-
-  return (
-    <div className="modal-bg open" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal modal-large">
-        <div className="modal-header">
-          <h2>Criar Tema Personalizado</h2>
-          <button className="btn-icon" type="button" onClick={onClose}><IconX size={16} stroke={2} /></button>
-        </div>
-
-        <div className="fi-wrapper">
-          <span className="fl-inner">Nome do Tema</span>
-          <input
-            className="fi"
-            type="text"
-            placeholder="Ex: O Meu Tema Escuro"
-            value={name}
-            onChange={e => setName(e.target.value)}
-          />
-        </div>
-
-        <div className="theme-preview-strip" style={{ borderColor: colors.border }}>
-          <div className="theme-preview-seg" style={{ background: colors.bg, color: colors.text2 }}>BG</div>
-          <div className="theme-preview-seg" style={{ background: colors.surface, color: colors.text }}>SFC</div>
-          <div className="theme-preview-seg" style={{ background: colors.accent, color: '#fff' }}>ACC</div>
-          <div className="theme-preview-seg" style={{ background: colors.surface, color: colors.text }}>TXT</div>
-        </div>
-
-        <div className="custom-theme-grid">
-          {fields.map(field => (
-            <div className="color-field" key={field.key}>
-              <div className="color-field-lbl">{field.label}</div>
-              <div className="color-field-row">
-                <input type="color" value={colors[field.key]} onChange={e => updateColor(field.key, e.target.value)} />
-                <span className="color-hex-label">{colors[field.key].toUpperCase()}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="modal-actions modal-actions-full">
-          <button className="btn-cancel" type="button" onClick={onClose}>Cancelar</button>
-          <button className="btn-save" type="button" onClick={saveTheme}>Guardar Tema</button>
-        </div>
-      </div>
-    </div>
+    <button className="btn-control" type="button" onClick={() => setThemeMode(next)} title={label} aria-label={`${label}. Mudar para ${THEME_META[next].label.toLowerCase()}`}>
+      <Icon size={18} stroke={2} />
+    </button>
   );
 }
 
@@ -335,7 +146,7 @@ export default function Topbar() {
           <span className="app-time">{timeText}</span>
         </div>
 
-        <ThemePicker />
+        <ThemeToggle />
 
         <button className="btn-control" type="button" onClick={() => setSettingsOpen(true)} title="Configurações">
           <span className="settings-icon"><IconSettings size={18} stroke={2} /></span>

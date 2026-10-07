@@ -23,8 +23,8 @@
 
 .notes-title-input:focus {
   outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-light);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
   background: var(--surface);
 }
 
@@ -58,8 +58,8 @@
 }
 
 .rte-btn:hover {
-  color: var(--accent);
-  background: var(--accent-light);
+  color: var(--primary);
+  background: var(--primary-soft);
 }
 
 .rte-sep {
@@ -97,8 +97,8 @@
 }
 
 .rte-editor:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-light);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
   background: var(--surface);
 }
 
@@ -139,7 +139,7 @@
   padding: 0 18px;
   border-radius: var(--radius-sm);
   border: none;
-  background: var(--accent);
+  background: var(--primary);
   color: #fff;
   font-size: 13px;
   font-weight: 600;
@@ -151,7 +151,7 @@
 }
 
 .btn-note-add:hover {
-  background: var(--accent-dark);
+  background: var(--primary-hover);
   transform: translateY(-1px);
 }
 
@@ -248,7 +248,7 @@ html[data-theme="dark"] .note-card:hover {
 }
 
 .note-collapse-btn:hover {
-  color: var(--accent);
+  color: var(--primary);
   background: var(--surface2);
 }
 
@@ -345,7 +345,7 @@ html[data-theme="dark"] .notes-float {
 
 .resize-handle:hover {
   opacity: 1;
-  color: var(--accent);
+  color: var(--primary);
   transform: scale(1.1);
 }
 
@@ -450,7 +450,7 @@ html[data-theme="dark"] .notes-float {
   top: 50%;
   right: 0;
   transform: translateY(-50%);
-  background: var(--accent);
+  background: var(--primary);
   color: #fff;
   border: none;
   cursor: pointer;
@@ -472,7 +472,7 @@ html[data-theme="dark"] .notes-float {
 }
 
 .notes-restore-tab:hover {
-  background: var(--accent-dark);
+  background: var(--primary-hover);
   padding-right: 12px;
 }
 
@@ -552,7 +552,7 @@ html[data-theme="dark"] .notes-float {
 }
 
 .note-drag-handle:hover {
-  color: var(--accent);
+  color: var(--primary);
   background: var(--surface2);
 }
 
@@ -562,12 +562,12 @@ html[data-theme="dark"] .notes-float {
 
 .note-float-item.drag-over-top,
 .note-card.drag-over-top {
-  box-shadow: 0 -2px 0 0 var(--accent);
+  box-shadow: 0 -2px 0 0 var(--primary);
 }
 
 .note-float-item.drag-over-bot,
 .note-card.drag-over-bot {
-  box-shadow: 0 2px 0 0 var(--accent);
+  box-shadow: 0 2px 0 0 var(--primary);
 }
 
 .note-float-item.dragging-src,

@@ -82,8 +82,8 @@ html[data-theme="dark"] .week-total-badge.short {
 }
 
 .td-link-wrapper:hover {
-  color: var(--accent);
-  background: var(--accent-light);
+  color: var(--primary);
+  background: var(--primary-soft);
   transform: scale(1.1);
 }
 

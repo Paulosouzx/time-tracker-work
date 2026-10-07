@@ -1,6 +1,5 @@
 import './App.css';
 import { useApp } from './context/AppContext';
-import AnimatedBackground from './components/Layout/AnimatedBackground';
 import Topbar from './components/Layout/Topbar';
 import Tabs, { WeekSummary } from './components/Layout/Tabs';
 import RegisterPanel from './components/RegisterPanel/RegisterPanel';
@@ -22,7 +21,6 @@ export default function App() {
 
   return (
     <div className="layout">
-      <AnimatedBackground />
       <Topbar />
       <WeekSummary />
       <Tabs />

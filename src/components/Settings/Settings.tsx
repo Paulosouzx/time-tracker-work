@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useApp, FONTS } from '../../context/AppContext';
+import { useApp } from '../../context/AppContext';
 import './Settings.css';
 
 const NAGER_BASE = 'https://date.nager.at/api/v3';
@@ -27,42 +27,6 @@ function ToggleRow({
         <input id={id} type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} />
         <span className="toggle-slider" />
       </label>
-    </div>
-  );
-}
-
-function FontPicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
-  useEffect(() => {
-    const fontLinks: Record<string, string> = {
-      inter: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
-      nunito: 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap',
-      geist: 'https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap',
-    };
-
-    Object.values(fontLinks).forEach(url => {
-      if (!document.querySelector(`link[href="${url}"]`)) {
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = url;
-        document.head.appendChild(link);
-      }
-    });
-  }, []);
-
-  return (
-    <div className="font-picker-grid">
-      {FONTS.map(font => (
-        <button
-          key={font.id}
-          type="button"
-          className={`font-picker-item ${value === font.id ? 'fp-selected' : ''}`}
-          style={{ fontFamily: font.stack }}
-          onClick={() => onChange(font.id)}
-        >
-          <div className="font-picker-name">{font.name}</div>
-          <div className="font-picker-preview">{font.preview}</div>
-        </button>
-      ))}
     </div>
   );
 }
@@ -348,10 +312,6 @@ export default function Settings({ onClose }: { onClose: () => void }) {
     setShowHolidays,
     userName,
     setUserName,
-    customFontEnabled,
-    setCustomFontEnabled,
-    customFont,
-    applyFont,
     savePrefs,
   } = useApp();
 
@@ -360,8 +320,6 @@ export default function Settings({ onClose }: { onClose: () => void }) {
   const [localNotesDone, setLocalNotesDone] = useState(showNotesDone);
   const [localCollapsed, setLocalCollapsed] = useState(notesCollapsed);
   const [localHolidays, setLocalHolidays] = useState(showHolidays);
-  const [localFontEnabled, setLocalFontEnabled] = useState(customFontEnabled);
-  const [localFont, setLocalFont] = useState(customFont);
 
   function save() {
     setShowSync(localSync);
@@ -378,15 +336,6 @@ export default function Settings({ onClose }: { onClose: () => void }) {
 
     setUserName(localName.trim());
     localStorage.setItem('tt_user_name', localName.trim());
-
-    setCustomFontEnabled(localFontEnabled);
-    localStorage.setItem('tt_custom_font_enabled', String(localFontEnabled));
-
-    if (localFontEnabled) {
-      applyFont(localFont);
-    } else {
-      applyFont('system');
-    }
 
     savePrefs();
     onClose();
@@ -442,23 +391,6 @@ export default function Settings({ onClose }: { onClose: () => void }) {
             onChange={setLocalCollapsed}
           />
         </div>
-
-        <div className="setting-section-title">Aparência</div>
-        <div className="setting-group">
-          <ToggleRow
-            id="chkCustomFont"
-            label="Fonte personalizada"
-            description="Escolher a fonte da interface"
-            checked={localFontEnabled}
-            onChange={setLocalFontEnabled}
-          />
-        </div>
-
-        {localFontEnabled && (
-          <div className="font-picker-grid" style={{ marginBottom: 12 }}>
-            <FontPicker value={localFont} onChange={setLocalFont} />
-          </div>
-        )}
 
         <div className="setting-section-title">Calendário</div>
         <div className="setting-group">

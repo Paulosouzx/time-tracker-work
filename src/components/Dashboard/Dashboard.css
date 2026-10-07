@@ -38,7 +38,7 @@
 .dash-kpi-value {
   font-size: 22px;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--primary);
 }
 
 .dash-kpi-sub {
@@ -48,7 +48,7 @@
 
 .dash-kpi-icon {
   font-size: 20px;
-  color: var(--accent);
+  color: var(--primary);
   opacity: .5;
   margin-bottom: 2px;
 }
@@ -78,7 +78,7 @@
 }
 
 .dash-card-title i {
-  color: var(--accent);
+  color: var(--primary);
 }
 
 .dash-two-col {
@@ -142,7 +142,7 @@
 .dash-proj-h {
   font-size: 12px;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--primary);
   min-width: 36px;
   text-align: right;
 }

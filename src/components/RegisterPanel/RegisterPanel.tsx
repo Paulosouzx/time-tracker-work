@@ -72,7 +72,7 @@ function TodayTable({ onEdit }: { onEdit: (entry: Entry) => void }) {
   const todayEntries = useMemo(() => entries.filter(entry => entry.date === today), [entries, today]);
   const totalToday = useMemo(() => todayEntries.reduce((sum, entry) => sum + entry.h, 0), [todayEntries]);
   const progress = Math.min(100, Math.round((totalToday / 8) * 100));
-  const progressColor = totalToday >= 8 ? 'var(--ok)' : totalToday >= 6 ? 'var(--warn)' : 'var(--accent)';
+  const progressColor = totalToday >= 8 ? 'var(--ok)' : totalToday >= 6 ? 'var(--warn)' : 'var(--primary)';
 
   function deleteEntry(entryId: string) {
     if (!confirm('Deseja eliminar este registo?')) return;

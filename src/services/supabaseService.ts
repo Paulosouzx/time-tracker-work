@@ -9,11 +9,8 @@ export interface PrefsPayload {
   notesCollapsed?: boolean;
   showHolidays?: boolean;
   customThemes?: unknown[];
-  customFontEnabled?: boolean;
-  customFont?: string;
   noteOrder?: string[] | null;
   holidays?: Holiday[];
-  floatStruckNotes?: string[];
   selectedHolidayCountry?: string;
   selectedHolidaySubdivision?: string;
 }

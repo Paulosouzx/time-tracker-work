@@ -81,7 +81,7 @@ function LineChart({ weeksRange }: { weeksRange: number }) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     const style = getComputedStyle(document.documentElement);
-    const accent = style.getPropertyValue('--accent').trim() || '#534AB7';
+    const accent = style.getPropertyValue('--primary').trim() || '#534AB7';
     const text3 = style.getPropertyValue('--text3').trim() || '#9895b0';
     const border = style.getPropertyValue('--border').trim() || '#E2E0F0';
     const surface = style.getPropertyValue('--surface').trim() || '#fff';
@@ -278,7 +278,7 @@ function DonutChart() {
         `<div class="dash-legend-item">
           <span class="dash-legend-dot" style="background:${DASH_PALETTE[index % DASH_PALETTE.length]};"></span>
           <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${name}</span>
-          <span style="font-weight:600;color:var(--accent);font-size:11px;">${fmtH(value)}</span>
+          <span style="font-weight:600;color:var(--primary);font-size:11px;">${fmtH(value)}</span>
         </div>`
       ).join('');
     }

@@ -9,14 +9,14 @@ import React, {
 } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../supabase/supabaseClient';
-import { Entry, Note, Holiday, CustomTheme, ThemeId, TabId } from '../types';
+import { Entry, Note, Holiday, ThemeMode, TabId } from '../types';
 import { loadJson, loadBool, loadString } from '../services/localStorageService';
 import {
-  BASE_THEMES,
-  FONTS,
-  applyTheme as applyThemeService,
-  applyFont as applyFontService,
+  applyTheme,
   getSavedTheme,
+  migrateThemeValue,
+  onSystemThemeChange,
+  cleanupLegacyThemeStorage,
 } from '../services/themeService';
 import {
   loadAppData,
@@ -25,10 +25,6 @@ import {
   savePrefsToSupabase,
   PrefsPayload,
 } from '../services/supabaseService';
-
-const THEME_KEY = 'tt_theme';
-
-export { BASE_THEMES, FONTS };
 
 interface AppContextType {
   currentUser: User | null;
@@ -56,23 +52,14 @@ interface AppContextType {
   setShowHolidays: React.Dispatch<React.SetStateAction<boolean>>;
   userName: string;
   setUserName: React.Dispatch<React.SetStateAction<string>>;
-  floatStruckNotes: string[];
-  setFloatStruckNotes: React.Dispatch<React.SetStateAction<string[]>>;
   noteOrder: string[] | null;
   setNoteOrder: React.Dispatch<React.SetStateAction<string[] | null>>;
   selectedHolidayCountry: string;
   setSelectedHolidayCountry: React.Dispatch<React.SetStateAction<string>>;
   selectedHolidaySubdivision: string;
   setSelectedHolidaySubdivision: React.Dispatch<React.SetStateAction<string>>;
-  currentTheme: ThemeId;
-  customThemes: CustomTheme[];
-  applyTheme: (id: ThemeId) => void;
-  addCustomTheme: (theme: CustomTheme) => void;
-  deleteCustomTheme: (id: string) => void;
-  customFontEnabled: boolean;
-  setCustomFontEnabled: React.Dispatch<React.SetStateAction<boolean>>;
-  customFont: string;
-  applyFont: (id: string) => void;
+  themeMode: ThemeMode;
+  setThemeMode: (mode: ThemeMode) => void;
   savePrefs: () => void;
 }
 
@@ -91,22 +78,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [notesCollapsed, setNotesCollapsed] = useState(() => loadBool('tt_notes_collapsed'));
   const [showHolidays, setShowHolidays] = useState(() => loadBool('tt_show_holidays'));
   const [userName, setUserName] = useState(() => loadString('tt_user_name'));
-  const [floatStruckNotes, setFloatStruckNotes] = useState<string[]>(() => loadJson('tt_float_struck', []));
   const [noteOrder, setNoteOrder] = useState<string[] | null>(() => loadJson('tt_note_order', null));
   const [selectedHolidayCountry, setSelectedHolidayCountry] = useState(() => loadString('tt_holiday_country'));
   const [selectedHolidaySubdivision, setSelectedHolidaySubdivision] = useState(() => loadString('tt_holiday_subdivision'));
 
-  const [currentTheme, setCurrentTheme] = useState<ThemeId>(() => getSavedTheme() || 'light');
-  const [customThemes, setCustomThemes] = useState<CustomTheme[]>(() => loadJson('tt_custom_themes', []));
-
-  const [customFontEnabled, setCustomFontEnabled] = useState(() => loadBool('tt_custom_font_enabled'));
-  const [customFont, setCustomFont] = useState(() => loadString('tt_custom_font', 'system'));
+  const [themeMode, setThemeModeState] = useState<ThemeMode>(() => {
+    const mode = getSavedTheme();
+    applyTheme(mode);
+    cleanupLegacyThemeStorage();
+    return mode;
+  });
 
   const [activeTab, setActiveTab] = useState<TabId>('reg');
 
   const saveEntriesTimer = useRef<ReturnType<typeof setTimeout>>();
   const saveNotesTimer = useRef<ReturnType<typeof setTimeout>>();
   const savePrefsTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  const prefsRef = useRef<PrefsPayload>({});
+  prefsRef.current = {
+    theme: themeMode,
+    userName,
+    showSync,
+    showNotesDone,
+    notesCollapsed,
+    showHolidays,
+    noteOrder,
+    holidays,
+    selectedHolidayCountry,
+    selectedHolidaySubdivision,
+  };
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: any, session: Session | null) => {
@@ -121,6 +122,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    applyTheme(themeMode);
+    if (themeMode !== 'system') return;
+    return onSystemThemeChange(() => applyTheme('system'));
+  }, [themeMode]);
+
   async function loadFromSupabase(uid: string) {
     try {
       const { entries: entriesData, notes: notesData, prefs } = await loadAppData(uid);
@@ -129,62 +136,43 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setNotes(notesData);
 
       if (prefs) {
-        // Sync all prefs to localStorage so they persist on refresh
-        if (prefs.theme) { 
-          applyTheme(prefs.theme, false); 
-          localStorage.setItem(THEME_KEY, prefs.theme);
+        if (prefs.theme) {
+          setThemeModeState(migrateThemeValue(prefs.theme, prefs.customThemes));
         }
-        if (prefs.userName !== undefined) { 
-          setUserName(prefs.userName); 
+        if (prefs.userName !== undefined) {
+          setUserName(prefs.userName);
           localStorage.setItem('tt_user_name', prefs.userName);
         }
-        if (prefs.showSync !== undefined) { 
-          setShowSync(prefs.showSync); 
+        if (prefs.showSync !== undefined) {
+          setShowSync(prefs.showSync);
           localStorage.setItem('tt_show_sync', String(prefs.showSync));
         }
-        if (prefs.showNotesDone !== undefined) { 
-          setShowNotesDone(prefs.showNotesDone); 
+        if (prefs.showNotesDone !== undefined) {
+          setShowNotesDone(prefs.showNotesDone);
           localStorage.setItem('tt_notes_done', String(prefs.showNotesDone));
         }
-        if (prefs.notesCollapsed !== undefined) { 
-          setNotesCollapsed(prefs.notesCollapsed); 
+        if (prefs.notesCollapsed !== undefined) {
+          setNotesCollapsed(prefs.notesCollapsed);
           localStorage.setItem('tt_notes_collapsed', String(prefs.notesCollapsed));
         }
-        if (prefs.showHolidays !== undefined) { 
-          setShowHolidays(prefs.showHolidays); 
+        if (prefs.showHolidays !== undefined) {
+          setShowHolidays(prefs.showHolidays);
           localStorage.setItem('tt_show_holidays', String(prefs.showHolidays));
         }
-        if (prefs.customThemes !== undefined) { 
-          setCustomThemes(prefs.customThemes as CustomTheme[]); 
-          localStorage.setItem('tt_custom_themes', JSON.stringify(prefs.customThemes));
-        }
-        if (prefs.customFontEnabled !== undefined) { 
-          setCustomFontEnabled(prefs.customFontEnabled); 
-          localStorage.setItem('tt_custom_font_enabled', String(prefs.customFontEnabled));
-        }
-        if (prefs.customFont !== undefined) { 
-          setCustomFont(prefs.customFont); 
-          applyFontService(prefs.customFont);
-          localStorage.setItem('tt_custom_font', prefs.customFont);
-        }
-        if (prefs.noteOrder !== undefined) { 
-          setNoteOrder(prefs.noteOrder); 
+        if (prefs.noteOrder !== undefined) {
+          setNoteOrder(prefs.noteOrder);
           localStorage.setItem('tt_note_order', JSON.stringify(prefs.noteOrder));
         }
-        if (prefs.holidays !== undefined) { 
-          setHolidays(prefs.holidays); 
+        if (prefs.holidays !== undefined) {
+          setHolidays(prefs.holidays);
           localStorage.setItem('tt_holidays', JSON.stringify(prefs.holidays));
         }
-        if (prefs.floatStruckNotes !== undefined) { 
-          setFloatStruckNotes(prefs.floatStruckNotes); 
-          localStorage.setItem('tt_float_struck', JSON.stringify(prefs.floatStruckNotes));
-        }
-        if (prefs.selectedHolidayCountry !== undefined) { 
-          setSelectedHolidayCountry(prefs.selectedHolidayCountry); 
+        if (prefs.selectedHolidayCountry !== undefined) {
+          setSelectedHolidayCountry(prefs.selectedHolidayCountry);
           localStorage.setItem('tt_holiday_country', prefs.selectedHolidayCountry);
         }
-        if (prefs.selectedHolidaySubdivision !== undefined) { 
-          setSelectedHolidaySubdivision(prefs.selectedHolidaySubdivision); 
+        if (prefs.selectedHolidaySubdivision !== undefined) {
+          setSelectedHolidaySubdivision(prefs.selectedHolidaySubdivision);
           localStorage.setItem('tt_holiday_subdivision', prefs.selectedHolidaySubdivision);
         }
       }
@@ -192,41 +180,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       console.warn('Supabase load error:', e);
     }
   }
-
-  const applyTheme = useCallback((id: ThemeId, persist = true) => {
-    const next = applyThemeService(id, customThemes, persist);
-    setCurrentTheme(next);
-  }, [customThemes]);
-
-  useEffect(() => {
-    const saved = getSavedTheme();
-    applyTheme(saved || (window.matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light'), false);
-  }, [applyTheme]);
-
-  const addCustomTheme = (theme: CustomTheme) => {
-    const next = [...customThemes, theme];
-    setCustomThemes(next);
-    localStorage.setItem('tt_custom_themes', JSON.stringify(next));
-    applyTheme(theme.id);
-  };
-
-  const deleteCustomTheme = (id: string) => {
-    const next = customThemes.filter((t) => t.id !== id);
-    setCustomThemes(next);
-    localStorage.setItem('tt_custom_themes', JSON.stringify(next));
-    if (currentTheme === id) applyTheme('light');
-  };
-
-  const applyFont = (id: string) => {
-    setCustomFont(id);
-    localStorage.setItem('tt_custom_font', id);
-    applyFontService(id);
-  };
-
-  useEffect(() => {
-    if (customFontEnabled) applyFontService(customFont);
-    else document.body.style.fontFamily = '';
-  }, [customFontEnabled, customFont]);
 
   const saveEntries = useCallback((updated: Entry[]) => {
     setEntries(updated);
@@ -256,29 +209,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const savePrefs = useCallback(() => {
     if (!currentUser) return;
     clearTimeout(savePrefsTimer.current);
+    const uid = currentUser.id;
     savePrefsTimer.current = setTimeout(() => {
-      const uid = currentUser.id;
-      const prefs: PrefsPayload = {
-        theme: localStorage.getItem(THEME_KEY) ?? undefined,
-        userName,
-        showSync,
-        showNotesDone,
-        notesCollapsed,
-        showHolidays,
-        customThemes,
-        customFontEnabled,
-        customFont,
-        noteOrder,
-        holidays,
-        floatStruckNotes,
-        selectedHolidayCountry,
-        selectedHolidaySubdivision,
-      };
-      savePrefsToSupabase(uid, prefs);
+      savePrefsToSupabase(uid, prefsRef.current);
     }, 1000);
-  }, [currentUser, userName, showSync, showNotesDone, notesCollapsed, showHolidays,
-    customThemes, customFontEnabled, customFont, noteOrder, holidays,
-    floatStruckNotes, selectedHolidayCountry, selectedHolidaySubdivision]);
+  }, [currentUser]);
+
+  const setThemeMode = useCallback((mode: ThemeMode) => {
+    setThemeModeState(mode);
+    savePrefs();
+  }, [savePrefs]);
 
   return (
     <AppContext.Provider value={{
@@ -292,14 +232,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       notesCollapsed, setNotesCollapsed,
       showHolidays, setShowHolidays,
       userName, setUserName,
-      floatStruckNotes, setFloatStruckNotes,
       noteOrder, setNoteOrder,
       selectedHolidayCountry, setSelectedHolidayCountry,
       selectedHolidaySubdivision, setSelectedHolidaySubdivision,
-      currentTheme, customThemes,
-      applyTheme, addCustomTheme, deleteCustomTheme,
-      customFontEnabled, setCustomFontEnabled,
-      customFont, applyFont,
+      themeMode, setThemeMode,
       savePrefs,
     }}>
       {children}

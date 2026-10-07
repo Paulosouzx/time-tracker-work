@@ -85,7 +85,7 @@
 }
 
 .toggle-switch input:checked+.toggle-slider {
-  background-color: var(--accent);
+  background-color: var(--primary);
 }
 
 .toggle-switch input:checked+.toggle-slider:before {
@@ -119,13 +119,13 @@
 }
 
 .font-picker-item:hover {
-  border-color: var(--accent);
-  background: var(--accent-light);
+  border-color: var(--primary);
+  background: var(--primary-soft);
 }
 
 .font-picker-item.fp-selected {
-  border-color: var(--accent);
-  background: var(--accent-light);
+  border-color: var(--primary);
+  background: var(--primary-soft);
 }
 
 .font-picker-name {
@@ -177,7 +177,7 @@
 }
 
 .color-field-row:hover {
-  border-color: var(--accent);
+  border-color: var(--primary);
 }
 
 .color-field-row input[type=color] {

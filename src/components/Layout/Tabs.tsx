@@ -27,7 +27,7 @@ export function WeekSummary() {
     [weekEntries],
   );
 
-  const progressColor = totalWeek >= 40 ? 'var(--ok)' : totalWeek >= 32 ? 'var(--warn)' : 'var(--accent)';
+  const progressColor = totalWeek >= 40 ? 'var(--ok)' : totalWeek >= 32 ? 'var(--warn)' : 'var(--primary)';
 
   const dayChips = useMemo(
     () => DAYS.map((label, index) => {
