@@ -10,7 +10,8 @@ a {
 }
 
 :root,
-html[data-theme="light"] {
+html[data-theme="light"],
+.theme-scope[data-theme="light"] {
   color-scheme: light;
   --bg: #F7F4E9;
   --surface: #FFFFFF;
@@ -68,7 +69,8 @@ html[data-theme="light"] {
   --radius: var(--radius-card);
 }
 
-html[data-theme="dark"] {
+html[data-theme="dark"],
+.theme-scope[data-theme="dark"] {
   color-scheme: dark;
   --bg: #0F1714;
   --surface: #18221E;
@@ -126,6 +128,11 @@ body {
 
 body {
   transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.theme-scope {
+  background: var(--bg);
+  color: var(--text);
 }
 
 .tabular {
@@ -296,6 +303,21 @@ button {
   text-overflow: ellipsis;
 }
 
+.tone-lime {
+  background: var(--ev-lime-bg);
+  color: var(--ev-lime-text);
+}
+
+.tone-peach {
+  background: var(--ev-peach-bg);
+  color: var(--ev-peach-text);
+}
+
+.tone-rose {
+  background: var(--ev-rose-bg);
+  color: var(--ev-rose-text);
+}
+
 .segmented {
   display: inline-flex;
   padding: 4px;
@@ -316,6 +338,7 @@ button {
 }
 
 .segmented button[aria-pressed="true"],
+.segmented button[aria-checked="true"],
 .segmented button[aria-selected="true"] {
   background: var(--primary);
   color: var(--primary-contrast);

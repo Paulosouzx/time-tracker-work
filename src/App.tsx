@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { useApp } from './context/AppContext';
+import Landing from './landing/Landing';
 import AppShell from './components/Layout/AppShell';
 import RegisterPanel from './components/RegisterPanel/RegisterPanel';
 import CalendarPanel from './components/Calendar/CalendarPanel';
@@ -12,12 +14,18 @@ import AppSkeleton from './components/Layout/AppSkeleton';
 export default function App() {
   const { activeTab, currentUser, authReady } = useApp();
 
+  useEffect(() => {
+    if (currentUser && window.location.pathname.startsWith('/login')) {
+      window.history.replaceState(null, '', '/');
+    }
+  }, [currentUser]);
+
   if (!authReady) {
     return <AppSkeleton />;
   }
 
   if (!currentUser) {
-    return <Auth />;
+    return window.location.pathname === '/' ? <Landing /> : <Auth />;
   }
 
   return (

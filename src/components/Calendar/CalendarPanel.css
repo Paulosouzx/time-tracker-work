@@ -270,21 +270,6 @@
   font-weight: 500;
 }
 
-.tone-lime {
-  background: var(--ev-lime-bg);
-  color: var(--ev-lime-text);
-}
-
-.tone-peach {
-  background: var(--ev-peach-bg);
-  color: var(--ev-peach-text);
-}
-
-.tone-rose {
-  background: var(--ev-rose-bg);
-  color: var(--ev-rose-text);
-}
-
 .cal-add {
   align-self: flex-start;
 }

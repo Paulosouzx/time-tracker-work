@@ -180,3 +180,17 @@
 .login-spinner {
   animation: spin 0.9s linear infinite;
 }
+
+.login-back {
+  align-self: flex-start;
+  margin: -12px 0 4px -4px;
+  padding: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+}
+
+.login-back:hover {
+  color: var(--primary-text);
+}

@@ -83,6 +83,7 @@ export default function Auth() {
   return (
     <div id="loginScreen">
       <div className="login-card">
+        <a href="/" className="login-back">← Voltar ao início</a>
         <div className="login-logo">
           <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 28, height: 28 }}>
             <circle cx="10" cy="10" r="7.5" stroke="currentColor" strokeWidth="1.6" />

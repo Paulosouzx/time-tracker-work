@@ -1,13 +1,24 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
-import { AppProvider } from './context/AppContext';
 import './index.css';
+import './pwaInstall';
+import Landing from './landing/Landing';
+import AppSkeleton from './components/Layout/AppSkeleton';
+import NotFound from './landing/NotFound';
+import { shouldShowLanding, isKnownRoute } from './landing/entry';
+
+const AppRoot = lazy(() => import('./AppRoot'));
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <AppProvider>
-      <App />
-    </AppProvider>
+    {!isKnownRoute() ? (
+      <NotFound />
+    ) : shouldShowLanding() ? (
+      <Landing />
+    ) : (
+      <Suspense fallback={<AppSkeleton />}>
+        <AppRoot />
+      </Suspense>
+    )}
   </React.StrictMode>
 );

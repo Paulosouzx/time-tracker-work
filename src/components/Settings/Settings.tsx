@@ -272,7 +272,14 @@ function AccountCard() {
         <div className="account-name">{name}</div>
         <div className="account-email">{email}</div>
       </div>
-      <button type="button" className="btn-secondary account-logout" onClick={() => supabase.auth.signOut()}>
+      <button
+        type="button"
+        className="btn-secondary account-logout"
+        onClick={async () => {
+          window.history.replaceState(null, '', '/');
+          await supabase.auth.signOut();
+        }}
+      >
         <IconLogout size={18} stroke={1.75} /> Terminar sessão
       </button>
     </section>
@@ -329,7 +336,6 @@ export default function Settings() {
               type="button"
               role="radio"
               aria-checked={themeMode === value}
-              aria-pressed={themeMode === value}
               onClick={() => setThemeMode(value)}
             >
               <IconCmp size={16} stroke={1.75} /> {label}
