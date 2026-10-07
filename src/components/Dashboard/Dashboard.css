@@ -260,3 +260,54 @@
 .dash-proj-h {
   font-weight: 600;
 }
+
+.dash-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dash-toolbar .chips {
+  min-width: 0;
+}
+
+.dash-week-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.dash-week-nav .chip-filter:disabled,
+.dash-week-nav .btn-icon:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.dash-bar-canvas {
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+@media (min-width: 1280px) {
+  .dash-kpis.dash-kpis-week {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.dash-week-days {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.dash-week-days .day-group + .day-group {
+  margin-top: 0;
+}
+
+.dash-week-days .entry-list {
+  display: flex;
+}

@@ -9,11 +9,13 @@ import {
   IconChartBar,
   IconChartDonut,
   IconTrophy,
+  IconChevronLeft,
+  IconChevronRight,
   type Icon,
 } from '@tabler/icons-react';
 import { useApp } from '../../context/AppContext';
 import { Entry } from '../../types';
-import { todayStr, getWeekKey, getWeekNumber, fmtH, toDStr, sortEntriesDesc } from '../../utils';
+import { todayStr, getWeekKey, getWeekNumber, fmtH, toDStr, sortEntriesDesc, parseDStr, weekRangeLabel, longDayLabel } from '../../utils';
 import EntryCard from '../Entries/EntryCard';
 import EntryEditModal from '../Entries/EntryEditModal';
 import './Dashboard.css';
@@ -118,7 +120,15 @@ function roundedTopRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: 
   ctx.closePath();
 }
 
-function WeeklyBarChart({ weekKeys }: { weekKeys: string[] }) {
+function WeeklyBarChart({
+  weekKeys,
+  selectedKey,
+  onSelect,
+}: {
+  weekKeys: string[];
+  selectedKey: string | null;
+  onSelect: (key: string) => void;
+}) {
   const { entries } = useApp();
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -157,6 +167,15 @@ function WeeklyBarChart({ weekKeys }: { weekKeys: string[] }) {
     const border = cssVar('--border');
     const text = cssVar('--text');
     const font = cssVar('--font');
+    const highlight = cssVar('--surface-muted');
+    const selectedIndex = selectedKey ? weekKeys.indexOf(selectedKey) : -1;
+
+    if (selectedIndex >= 0) {
+      ctx.fillStyle = highlight;
+      ctx.beginPath();
+      ctx.roundRect(padding.left + slot * selectedIndex + 2, 4, slot - 4, height - 8, 12);
+      ctx.fill();
+    }
 
     ctx.strokeStyle = border;
     ctx.lineWidth = 1;
@@ -190,31 +209,48 @@ function WeeklyBarChart({ weekKeys }: { weekKeys: string[] }) {
     data.forEach((value, index) => {
       const cx = padding.left + slot * index + slot / 2;
       const barHeight = (value / maxValue) * plotHeight;
+      const dimmed = selectedIndex >= 0 && index !== selectedIndex;
       if (value > 0) {
+        ctx.save();
+        ctx.globalAlpha = dimmed ? 0.35 : 1;
         ctx.fillStyle = primary;
         roundedTopRect(ctx, cx - barWidth / 2, padding.top + plotHeight - barHeight, barWidth, barHeight, 8);
         ctx.fill();
-        if (slot > 30) {
+        ctx.restore();
+        if (slot > 30 && !dimmed) {
           ctx.fillStyle = text;
           ctx.font = `600 11px ${font}`;
           ctx.textAlign = 'center';
           ctx.fillText(fmtH(value), cx, padding.top + plotHeight - barHeight - 6);
         }
       }
-      ctx.fillStyle = muted;
-      ctx.font = `${index === data.length - 1 ? '600 ' : ''}11px ${font}`;
+      ctx.fillStyle = index === selectedIndex ? text : muted;
+      ctx.font = `${index === selectedIndex || (selectedIndex < 0 && index === data.length - 1) ? '600 ' : ''}11px ${font}`;
       ctx.textAlign = 'center';
       if (slot > 26 || index % 2 === data.length % 2) {
         ctx.fillText(labels[index], cx, height - 8);
       }
     });
-  }, [data, labels, width, theme, maxValue, plotHeight, plotWidth, slot, barWidth]);
+  }, [data, labels, width, theme, maxValue, plotHeight, plotWidth, slot, barWidth, selectedKey, weekKeys]);
+
+  function indexAt(clientX: number, rect: DOMRect) {
+    const index = Math.floor((clientX - rect.left - padding.left) / slot);
+    return index >= 0 && index < data.length ? index : -1;
+  }
+
+  function handleKey(event: React.KeyboardEvent<HTMLCanvasElement>) {
+    const current = selectedKey ? weekKeys.indexOf(selectedKey) : weekKeys.length - 1;
+    const delta = event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0;
+    if (!delta) return;
+    event.preventDefault();
+    const next = Math.min(weekKeys.length - 1, Math.max(0, (current < 0 ? weekKeys.length - 1 : current) + delta));
+    onSelect(weekKeys[next]);
+  }
 
   function handleMove(event: React.MouseEvent<HTMLCanvasElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
-    const x = event.clientX - rect.left - padding.left;
-    const index = Math.floor(x / slot);
-    if (index >= 0 && index < data.length) {
+    const index = indexAt(event.clientX, rect);
+    if (index >= 0) {
       setHover({ index, x: event.clientX - rect.left, y: event.clientY - rect.top });
     } else {
       setHover(null);
@@ -225,8 +261,19 @@ function WeeklyBarChart({ weekKeys }: { weekKeys: string[] }) {
     <div className="dash-chart-area" ref={wrapRef}>
       <canvas
         ref={canvasRef}
-        role="img"
-        aria-label={`Horas por semana: ${data.map((value, index) => `${labels[index]} ${fmtH(value)}`).join(', ')}`}
+        className="dash-bar-canvas"
+        role="slider"
+        tabIndex={0}
+        aria-label="Escolher semana (setas esquerda/direita)"
+        aria-valuemin={0}
+        aria-valuemax={weekKeys.length - 1}
+        aria-valuenow={selectedKey ? Math.max(0, weekKeys.indexOf(selectedKey)) : weekKeys.length - 1}
+        aria-valuetext={`Semana ${selectedKey ? getWeekNumber(selectedKey) : ''}: ${fmtH(data[selectedKey ? weekKeys.indexOf(selectedKey) : data.length - 1] ?? 0)}`}
+        onKeyDown={handleKey}
+        onClick={(event) => {
+          const index = indexAt(event.clientX, event.currentTarget.getBoundingClientRect());
+          if (index >= 0) onSelect(weekKeys[index]);
+        }}
         onMouseMove={handleMove}
         onMouseLeave={() => setHover(null)}
       />
@@ -366,11 +413,51 @@ function TopProjects({ entries }: { entries: Entry[] }) {
   );
 }
 
+function WeekKPIs({ entries, weekKey }: { entries: Entry[]; weekKey: string }) {
+  const total = entries.reduce((sum, entry) => sum + entry.h, 0);
+  const days = new Set(entries.map((entry) => entry.date));
+  const weekDays = useMemo(() => {
+    const start = parseDStr(weekKey);
+    return Array.from({ length: 5 }, (_, index) => {
+      const date = new Date(start);
+      date.setDate(start.getDate() + index);
+      return toDStr(date);
+    });
+  }, [weekKey]);
+  const workDaysLogged = weekDays.filter((day) => days.has(day)).length;
+
+  const metrics: { icon: Icon; label: string; value: string; sub: string }[] = [
+    { icon: IconCalendarWeek, label: 'Total', value: fmtH(total), sub: `de 40h · ${Math.round((total / 40) * 100)}%` },
+    { icon: IconTrendingUp, label: 'Média por dia', value: fmtH(days.size ? Math.round((total / days.size) * 4) / 4 : 0), sub: 'dias com registo' },
+    { icon: IconSun, label: 'Dias registados', value: `${workDaysLogged}/5`, sub: 'dias úteis' },
+    { icon: IconDatabase, label: 'Entradas', value: String(entries.length), sub: 'nesta semana' },
+    { icon: IconBriefcase, label: 'Projetos', value: String(new Set(entries.map((entry) => entry.proj)).size), sub: 'distintos' },
+  ];
+
+  return (
+    <div className="dash-kpis dash-kpis-week">
+      {metrics.map(({ icon: IconCmp, label, value, sub }) => (
+        <div className="card dash-kpi" key={label}>
+          <span className="dash-kpi-icon"><IconCmp size={18} stroke={1.75} /></span>
+          <span className="dash-kpi-label">{label}</span>
+          <span className="dash-kpi-value tabular">{value}</span>
+          <span className="dash-kpi-sub">{sub}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+type View = 'week' | 'all';
+
 export default function Dashboard() {
   const { entries, saveEntries, showSync } = useApp();
+  const [view, setView] = useState<View>('week');
   const [weeksRange, setWeeksRange] = useState(8);
+  const [selectedWeek, setSelectedWeek] = useState(() => getWeekKey(todayStr()));
   const [editEntry, setEditEntry] = useState<Entry | null>(null);
 
+  const currentWeek = getWeekKey(todayStr());
   const weekKeys = useMemo(() => getRecentWeekKeys(weeksRange), [weeksRange]);
   const rangeEntries = useMemo(() => {
     const keys = new Set(weekKeys);
@@ -379,60 +466,136 @@ export default function Dashboard() {
   const rangeTotal = rangeEntries.reduce((sum, entry) => sum + entry.h, 0);
   const recent = useMemo(() => sortEntriesDesc(entries).slice(0, 5), [entries]);
 
+  const weekEntries = useMemo(() => entries.filter((entry) => getWeekKey(entry.date) === selectedWeek), [entries, selectedWeek]);
+  const weekTotal = weekEntries.reduce((sum, entry) => sum + entry.h, 0);
+  const weekDays = useMemo(() => {
+    const map = new Map<string, Entry[]>();
+    sortEntriesDesc(weekEntries).forEach((entry) => {
+      if (!map.has(entry.date)) map.set(entry.date, []);
+      map.get(entry.date)!.push(entry);
+    });
+    return [...map.entries()];
+  }, [weekEntries]);
+
+  function shiftWeek(delta: number) {
+    const date = parseDStr(selectedWeek);
+    date.setDate(date.getDate() + delta * 7);
+    setSelectedWeek(getWeekKey(toDStr(date)));
+  }
+
+  function selectWeek(key: string) {
+    setSelectedWeek(key);
+    setView('week');
+  }
+
+  function toggleSync(item: Entry, checked: boolean) {
+    saveEntries(entries.map((e) => (e.id === item.id ? { ...e, sync: checked } : e)));
+  }
+
+  const isWeek = view === 'week';
+
   return (
     <div className="dash">
-      <div className="chips" role="group" aria-label="Período">
-        {RANGES.map((range) => (
-          <button key={range} type="button" className="chip-filter" aria-pressed={weeksRange === range} onClick={() => setWeeksRange(range)}>
-            {range} semanas
-          </button>
-        ))}
+      <div className="dash-toolbar">
+        <div className="segmented" role="group" aria-label="Vista">
+          <button type="button" aria-pressed={isWeek} onClick={() => setView('week')}>Semana</button>
+          <button type="button" aria-pressed={!isWeek} onClick={() => setView('all')}>Geral</button>
+        </div>
+        <div className="chips" role="group" aria-label="Período do gráfico">
+          {RANGES.map((range) => (
+            <button key={range} type="button" className="chip-filter" aria-pressed={weeksRange === range} onClick={() => setWeeksRange(range)}>
+              {range} semanas
+            </button>
+          ))}
+        </div>
       </div>
 
       <section className="card dash-hero" aria-labelledby="dashTotal">
         <div className="dash-hero-head">
-          <div>
-            <h2 className="dash-hero-label" id="dashTotal">Total de horas</h2>
-            <p className="dash-hero-value tabular">{fmtH(rangeTotal)}</p>
-            <p className="dash-hero-sub">nas últimas {weeksRange} semanas · {rangeEntries.length} entradas</p>
-          </div>
-          <span className="dash-card-title-icon" aria-hidden="true"><IconChartBar size={20} stroke={1.75} /></span>
+          {isWeek ? (
+            <div>
+              <h2 className="dash-hero-label" id="dashTotal">
+                Semana {getWeekNumber(selectedWeek)} · <span className="tabular">{weekRangeLabel(selectedWeek)}</span>
+              </h2>
+              <p className="dash-hero-value tabular">{fmtH(weekTotal)}</p>
+              <p className="dash-hero-sub">de 40h · {weekEntries.length} entradas · clica numa barra para mudar de semana</p>
+            </div>
+          ) : (
+            <div>
+              <h2 className="dash-hero-label" id="dashTotal">Total de horas</h2>
+              <p className="dash-hero-value tabular">{fmtH(rangeTotal)}</p>
+              <p className="dash-hero-sub">nas últimas {weeksRange} semanas · {rangeEntries.length} entradas</p>
+            </div>
+          )}
+          {isWeek ? (
+            <div className="dash-week-nav">
+              <button type="button" className="btn-icon" onClick={() => shiftWeek(-1)} aria-label="Semana anterior">
+                <IconChevronLeft size={20} stroke={1.75} />
+              </button>
+              <button type="button" className="chip-filter" onClick={() => setSelectedWeek(currentWeek)} disabled={selectedWeek === currentWeek}>
+                Esta semana
+              </button>
+              <button type="button" className="btn-icon" onClick={() => shiftWeek(1)} disabled={selectedWeek === currentWeek} aria-label="Semana seguinte">
+                <IconChevronRight size={20} stroke={1.75} />
+              </button>
+            </div>
+          ) : (
+            <span className="dash-card-title-icon" aria-hidden="true"><IconChartBar size={20} stroke={1.75} /></span>
+          )}
         </div>
-        <WeeklyBarChart weekKeys={weekKeys} />
+        <WeeklyBarChart weekKeys={weekKeys} selectedKey={isWeek ? selectedWeek : null} onSelect={selectWeek} />
       </section>
 
-      <KPIs />
+      {isWeek ? <WeekKPIs entries={weekEntries} weekKey={selectedWeek} /> : <KPIs />}
 
       <div className="dash-two-col">
         <section className="card dash-card" aria-labelledby="dashDonut">
           <h2 className="dash-card-title" id="dashDonut"><IconChartDonut size={18} stroke={1.75} /> Por projeto</h2>
-          <DonutChart entries={entries} />
+          <DonutChart entries={isWeek ? weekEntries : entries} />
         </section>
         <section className="card dash-card" aria-labelledby="dashTop">
           <h2 className="dash-card-title" id="dashTop"><IconTrophy size={18} stroke={1.75} /> Top projetos</h2>
-          <TopProjects entries={entries} />
+          <TopProjects entries={isWeek ? weekEntries : entries} />
         </section>
       </div>
 
-      <section aria-labelledby="dashRecent">
-        <h2 className="section-title" id="dashRecent">Atividade recente</h2>
-        {recent.length ? (
-          <div className="entry-list">
-            {recent.map((entry) => (
-              <EntryCard
-                key={entry.id}
-                entry={entry}
-                showSync={showSync}
-                showDate
-                onEdit={setEditEntry}
-                onToggleSync={(item, checked) => saveEntries(entries.map((e) => (e.id === item.id ? { ...e, sync: checked } : e)))}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="card empty-state">Sem atividade ainda</div>
-        )}
-      </section>
+      {isWeek ? (
+        <section aria-labelledby="dashWeekEntries">
+          <h2 className="section-title" id="dashWeekEntries">Entradas da semana</h2>
+          {weekDays.length ? (
+            <div className="dash-week-days">
+              {weekDays.map(([date, items]) => (
+                <section key={date} className="day-group" aria-label={date}>
+                  <div className="day-group-head">
+                    <h3 className="day-group-title">{longDayLabel(parseDStr(date))}</h3>
+                    <span className="day-group-total tabular">{fmtH(items.reduce((sum, item) => sum + item.h, 0))}</span>
+                  </div>
+                  <div className="entry-list">
+                    {items.map((entry) => (
+                      <EntryCard key={entry.id} entry={entry} showSync={showSync} onEdit={setEditEntry} onToggleSync={toggleSync} />
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          ) : (
+            <div className="card empty-state">Sem entradas nesta semana</div>
+          )}
+        </section>
+      ) : (
+        <section aria-labelledby="dashRecent">
+          <h2 className="section-title" id="dashRecent">Atividade recente</h2>
+          {recent.length ? (
+            <div className="entry-list">
+              {recent.map((entry) => (
+                <EntryCard key={entry.id} entry={entry} showSync={showSync} showDate onEdit={setEditEntry} onToggleSync={toggleSync} />
+              ))}
+            </div>
+          ) : (
+            <div className="card empty-state">Sem atividade ainda</div>
+          )}
+        </section>
+      )}
 
       {editEntry && <EntryEditModal entry={editEntry} onClose={() => setEditEntry(null)} />}
     </div>
