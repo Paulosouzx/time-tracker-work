@@ -1,73 +1,11 @@
 import { useMemo, useState } from 'react';
+import { IconDatabaseOff } from '@tabler/icons-react';
 import { useApp } from '../../context/AppContext';
-import './HistoryPanel.css';
-import { getWeekKey, weekRangeLabel, getWeekNumber, fmtH, toDStr } from '../../utils';
+import { getWeekKey, weekRangeLabel, getWeekNumber, fmtH, dateSortKey, sortEntriesDesc } from '../../utils';
 import { Entry } from '../../types';
-import { TimePicker, CalendarPicker, FloatInput } from '../Layout/Pickers';
-
-function parseDate(dateString: string) {
-  const [day, month, year] = dateString.split('/').map(Number);
-  return new Date(year, month - 1, day);
-}
-
-function EditModal({ entry, onClose }: { entry: Entry; onClose: () => void }) {
-  const { entries, saveEntries } = useApp();
-  const [hours, setHours] = useState(entry.h);
-  const [project, setProject] = useState(entry.proj);
-  const [description, setDescription] = useState(entry.desc);
-  const [link, setLink] = useState(entry.link || '');
-  const [date, setDate] = useState(parseDate(entry.date));
-
-  function saveChanges() {
-    const updatedEntries = entries.map(item =>
-      item.id === entry.id
-        ? { ...item, h: hours, proj: project.trim(), desc: description.trim(), link: link.trim(), date: toDStr(date) }
-        : item,
-    );
-    saveEntries(updatedEntries);
-    onClose();
-  }
-
-  return (
-    <div className="modal-bg open" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal">
-        <div className="modal-header">
-          <h2>Editar entrada</h2>
-          <button className="btn-icon" onClick={onClose}><i className="ti ti-x" /></button>
-        </div>
-
-        <div className="modal-grid">
-          <TimePicker value={hours} onChange={setHours} />
-          <FloatInput label="Projeto" id="hProj" value={project} onChange={setProject} />
-        </div>
-
-        <div className="modal-section">
-          <CalendarPicker value={date} onChange={setDate} />
-        </div>
-
-        <FloatInput label="Descrição" id="hDesc" value={description} onChange={setDescription} style={{ marginBottom: 12 }} />
-        <FloatInput
-          label="Link da Case (opcional)"
-          id="hLink"
-          type="url"
-          placeholder="https://…"
-          value={link}
-          onChange={setLink}
-          style={{ marginTop: 12 }}
-        />
-
-        <div className="modal-actions">
-          <button className="btn-cancel" onClick={onClose}>Cancelar</button>
-          <button className="btn-save" onClick={saveChanges}>Guardar Alterações</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function sortByDateDesc(list: Entry[]) {
-  return [...list].sort((a, b) => b.date.split('/').reverse().join('').localeCompare(a.date.split('/').reverse().join('')));
-}
+import EntryCard from '../Entries/EntryCard';
+import EntryEditModal from '../Entries/EntryEditModal';
+import './HistoryPanel.css';
 
 export default function HistoryPanel() {
   const { entries, saveEntries, showSync } = useApp();
@@ -75,84 +13,36 @@ export default function HistoryPanel() {
   const [editEntry, setEditEntry] = useState<Entry | null>(null);
 
   const weekKeys = useMemo(
-    () => [...new Set(entries.map(entry => getWeekKey(entry.date)))].sort((a, b) => b.split('/').reverse().join('').localeCompare(a.split('/').reverse().join(''))),
+    () => [...new Set(entries.map((entry) => getWeekKey(entry.date)))].sort((a, b) => dateSortKey(b).localeCompare(dateSortKey(a))),
     [entries],
   );
 
-  const filteredEntries = useMemo(() => {
-    const list = weekFilter === 'all' ? entries : entries.filter(entry => getWeekKey(entry.date) === weekFilter);
-    return sortByDateDesc(list);
+  const groups = useMemo(() => {
+    const list = weekFilter === 'all' ? entries : entries.filter((entry) => getWeekKey(entry.date) === weekFilter);
+    const map = new Map<string, Entry[]>();
+    sortEntriesDesc(list).forEach((entry) => {
+      const key = getWeekKey(entry.date);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(entry);
+    });
+    return [...map.entries()].map(([key, items]) => ({
+      key,
+      items,
+      total: items.reduce((sum, item) => sum + item.h, 0),
+    }));
   }, [entries, weekFilter]);
 
-  function deleteEntry(entryId: string) {
-    if (!confirm('Deseja eliminar este registo?')) return;
-    saveEntries(entries.filter(item => item.id !== entryId));
+  function updateSync(entry: Entry, checked: boolean) {
+    saveEntries(entries.map((item) => (item.id === entry.id ? { ...item, sync: checked } : item)));
   }
-
-  function updateSync(entryId: string, checked: boolean) {
-    saveEntries(entries.map(item => (item.id === entryId ? { ...item, sync: checked } : item)));
-  }
-
-  const rows = useMemo(() => {
-    const groupRows: JSX.Element[] = [];
-    let currentWeek: string | null = null;
-
-    filteredEntries.forEach(entry => {
-      const entryWeek = getWeekKey(entry.date);
-      if (entryWeek !== currentWeek) {
-        currentWeek = entryWeek;
-        const weekSum = filteredEntries.filter(item => getWeekKey(item.date) === entryWeek).reduce((sum, item) => sum + item.h, 0);
-        const badgeClass = weekSum >= 40 ? 'ok' : weekSum >= 32 ? 'warn' : 'short';
-        groupRows.push(
-          <tr key={`week-${entryWeek}`} className="week-group-row">
-            <td colSpan={showSync ? 7 : 6}>
-              Semana {getWeekNumber(entryWeek)} ({weekRangeLabel(entryWeek)})
-              <span className={`week-total-badge ${badgeClass}`}>{fmtH(weekSum)}</span>
-            </td>
-          </tr>,
-        );
-      }
-
-      groupRows.push(
-        <tr key={entry.id}>
-          {showSync && (
-            <td className="td-sync-cell">
-              <input
-                type="checkbox"
-                checked={!!entry.sync}
-                onChange={event => updateSync(entry.id, event.target.checked)}
-              />
-            </td>
-          )}
-          <td className="td-date">{entry.date}</td>
-          <td className="td-proj">{entry.proj}</td>
-          <td className="td-desc">{entry.desc}</td>
-          <td className="td-link">
-            {entry.link ? (
-              <a href={entry.link} target="_blank" rel="noopener noreferrer" className="td-link-wrapper" title="Abrir link">
-                <i className="ti ti-external-link td-link-icon" />
-              </a>
-            ) : null}
-          </td>
-          <td className="td-h">{fmtH(entry.h)}</td>
-          <td className="td-actions">
-            <button className="btn-icon" onClick={() => setEditEntry(entry)}><i className="ti ti-pencil" /></button>
-            <button className="btn-icon del" onClick={() => deleteEntry(entry.id)}><i className="ti ti-trash" /></button>
-          </td>
-        </tr>,
-      );
-    });
-
-    return groupRows;
-  }, [filteredEntries, showSync, saveEntries]);
 
   return (
-    <div id="panelHist" className="panel active">
-      <div className="hist-filter">
-        <span className="hist-filter-label">Semana</span>
-        <select className="week-select" value={weekFilter} onChange={e => setWeekFilter(e.target.value)}>
+    <div className="history">
+      <div className="history-filter">
+        <label className="field-label" htmlFor="histWeek">Semana</label>
+        <select id="histWeek" className="week-select" value={weekFilter} onChange={(e) => setWeekFilter(e.target.value)}>
           <option value="all">Todas as semanas</option>
-          {weekKeys.map(key => (
+          {weekKeys.map((key) => (
             <option key={key} value={key}>
               Semana {getWeekNumber(key)} ({weekRangeLabel(key)})
             </option>
@@ -160,31 +50,40 @@ export default function HistoryPanel() {
         </select>
       </div>
 
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              {showSync && <th className="sync-header"><i className="ti ti-check" /></th>}
-              <th>Data</th>
-              <th>Projeto</th>
-              <th>Descrição</th>
-              <th>Link</th>
-              <th>Horas</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>{rows}</tbody>
-        </table>
+      {groups.length === 0 ? (
+        <div className="card empty-state">
+          <span className="empty-icon"><IconDatabaseOff size={26} stroke={1.75} /></span>
+          Nenhuma entrada registada
+        </div>
+      ) : (
+        groups.map((group) => {
+          const status = group.total >= 40 ? 'ok' : group.total >= 32 ? 'warn' : 'short';
+          return (
+            <section key={group.key} className="day-group" aria-labelledby={`wk-${group.key}`}>
+              <div className="day-group-head">
+                <h2 className="day-group-title" id={`wk-${group.key}`}>
+                  Semana {getWeekNumber(group.key)} <span className="history-range tabular">{weekRangeLabel(group.key)}</span>
+                </h2>
+                <span className={`week-total-badge ${status} tabular`}>{fmtH(group.total)}</span>
+              </div>
+              <div className="entry-list">
+                {group.items.map((entry) => (
+                  <EntryCard
+                    key={entry.id}
+                    entry={entry}
+                    showSync={showSync}
+                    showDate
+                    onEdit={setEditEntry}
+                    onToggleSync={updateSync}
+                  />
+                ))}
+              </div>
+            </section>
+          );
+        })
+      )}
 
-        {filteredEntries.length === 0 && (
-          <div className="empty-state">
-            <div className="empty-icon"><i className="ti ti-database-off" /></div>
-            Nenhuma entrada registada
-          </div>
-        )}
-      </div>
-
-      {editEntry && <EditModal entry={editEntry} onClose={() => setEditEntry(null)} />}
+      {editEntry && <EntryEditModal entry={editEntry} onClose={() => setEditEntry(null)} />}
     </div>
   );
 }
