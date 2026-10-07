@@ -1,76 +1,69 @@
 import { useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
-import { todayStr, toDStr, getWeekKey, fmtH } from '../../utils';
+import { todayStr, toDStr, getWeekKey, parseDStr, fmtH } from '../../utils';
+import { setPendingRegisterDate } from '../../router';
 import './WeekSummary.css';
 
 const DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
-
-function getWeekStartDate(weekKey: string) {
-  const [day, month, year] = weekKey.split('/').map(Number);
-  return new Date(year, month - 1, day);
-}
 
 export default function WeekSummary() {
   const { entries, holidays, showHolidays, setActiveTab, activeTab } = useApp();
   const today = todayStr();
   const weekKey = getWeekKey(today);
-  const weekStart = useMemo(() => getWeekStartDate(weekKey), [weekKey]);
-
-  const weekEntries = useMemo(
-    () => entries.filter(entry => getWeekKey(entry.date) === weekKey),
-    [entries, weekKey],
-  );
+  const weekStart = useMemo(() => parseDStr(weekKey), [weekKey]);
 
   const totalWeek = useMemo(
-    () => weekEntries.reduce((sum, entry) => sum + entry.h, 0),
-    [weekEntries],
+    () => entries.filter((entry) => getWeekKey(entry.date) === weekKey).reduce((sum, entry) => sum + entry.h, 0),
+    [entries, weekKey],
   );
-
-  const progressColor = totalWeek >= 40 ? 'var(--ok)' : totalWeek >= 32 ? 'var(--warn)' : 'var(--primary)';
 
   const dayChips = useMemo(
     () => DAYS.map((label, index) => {
       const dayDate = new Date(weekStart);
       dayDate.setDate(weekStart.getDate() + index);
       const dateKey = toDStr(dayDate);
-      const dayHours = entries.filter(entry => entry.date === dateKey).reduce((sum, entry) => sum + entry.h, 0);
-      const holiday = showHolidays ? holidays.find(item => item.date === dateKey) : undefined;
-      return { label, dateKey, hours: dayHours, holiday, date: dayDate };
+      const hours = entries.filter((entry) => entry.date === dateKey).reduce((sum, entry) => sum + entry.h, 0);
+      const holiday = showHolidays ? holidays.find((item) => item.date === dateKey) : undefined;
+      return { label, dateKey, hours, holiday, date: dayDate };
     }),
     [entries, holidays, showHolidays, weekStart],
   );
 
+  const progress = Math.min(100, Math.round((totalWeek / 40) * 100));
+
   function selectDay(date: Date) {
+    setPendingRegisterDate(date);
     if (activeTab !== 'reg') setActiveTab('reg');
-    window.dispatchEvent(new CustomEvent('tt:selectDate', { detail: { date } }));
   }
 
   return (
-    <div className="week-block">
+    <section className="card week-card" aria-labelledby="weekTitle">
       <div className="week-row">
         <div>
-          <div className="week-label">Esta semana</div>
-          <div className="week-sub">{fmtH(totalWeek)} de 40h registadas</div>
+          <h2 className="week-label" id="weekTitle">Esta semana</h2>
+          <p className="week-sub">{fmtH(totalWeek)} de 40h registadas</p>
         </div>
-        <div className="week-hours" style={{ color: progressColor }}>{fmtH(totalWeek)}</div>
+        <div className="week-hours tabular">{fmtH(totalWeek)}</div>
       </div>
-      <div className="week-bar-bg">
-        <div className="week-bar-fill" style={{ width: `${Math.min(100, Math.round((totalWeek / 40) * 100))}%`, background: progressColor }} />
+      <div className="week-bar" role="progressbar" aria-valuemin={0} aria-valuemax={40} aria-valuenow={totalWeek} aria-label="Progresso semanal">
+        <div className="week-bar-fill" style={{ width: `${progress}%` }} />
       </div>
-      <div className="week-chips">
+      <div className="week-days">
         {dayChips.map(({ label, dateKey, hours, holiday, date }) => (
           <button
             key={dateKey}
             type="button"
-            className={`chip ${dateKey === today ? 'active' : ''} ${holiday ? 'holiday' : ''}`}
+            className={`week-day ${dateKey === today ? 'today' : ''} ${holiday ? 'holiday' : ''}`}
             title={holiday?.name}
-            onClick={() => !holiday && selectDay(date)}
+            disabled={!!holiday}
+            aria-label={`${label}, ${fmtH(hours)}${holiday ? `, feriado: ${holiday.name}` : ''}`}
+            onClick={() => selectDay(date)}
           >
-            {label} {fmtH(hours)}
-            {holiday && <span className="holiday-badge" title={holiday.name}>F</span>}
+            <span className="week-day-name">{label}</span>
+            <span className="week-day-hours tabular">{holiday ? 'Feriado' : fmtH(hours)}</span>
           </button>
         ))}
       </div>
-    </div>
+    </section>
   );
 }

@@ -64,40 +64,6 @@ export function esc(s: string): string {
     : '';
 }
 
-export function darkenHex(hex: string, pct: number): string {
-  hex = hex.replace('#', '');
-  let r = parseInt(hex.substr(0, 2), 16);
-  let g = parseInt(hex.substr(2, 2), 16);
-  let b = parseInt(hex.substr(4, 2), 16);
-  r = Math.max(0, r - Math.round((r * pct) / 100));
-  g = Math.max(0, g - Math.round((g * pct) / 100));
-  b = Math.max(0, b - Math.round((b * pct) / 100));
-  return '#' + [r, g, b].map((x) => x.toString(16).padStart(2, '0')).join('');
-}
-
-export function hexWithAlpha(hex: string, alpha: number): string {
-  hex = hex.replace('#', '');
-  const r = parseInt(hex.substr(0, 2), 16);
-  const g = parseInt(hex.substr(2, 2), 16);
-  const b = parseInt(hex.substr(4, 2), 16);
-  return `rgba(${r},${g},${b},${alpha})`;
-}
-
-export function blendHex(hex1: string, hex2: string, t: number): string {
-  const p = (s: string) => {
-    s = s.replace('#', '');
-    return [parseInt(s.substr(0, 2), 16), parseInt(s.substr(2, 2), 16), parseInt(s.substr(4, 2), 16)];
-  };
-  const [r1, g1, b1] = p(hex1);
-  const [r2, g2, b2] = p(hex2);
-  return (
-    '#' +
-    [Math.round(r1 * (1 - t) + r2 * t), Math.round(g1 * (1 - t) + g2 * t), Math.round(b1 * (1 - t) + b2 * t)]
-      .map((x) => x.toString(16).padStart(2, '0'))
-      .join('')
-  );
-}
-
 export function getGreeting(): string {
   const h = new Date().getHours();
   if (h >= 5 && h < 12) return 'Bom dia';
@@ -110,7 +76,23 @@ export const MONTH_NAMES = [
   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro',
 ];
 
-export const DASH_PALETTE = [
-  '#534AB7','#E8547A','#2E8B57','#E8A020','#0F609B',
-  '#CB4127','#7C6FFF','#22C97A','#B08090','#8A6A20',
-];
+export type EventTone = 'lime' | 'peach' | 'rose';
+const TONES: EventTone[] = ['lime', 'peach', 'rose'];
+
+export function projectTone(project: string): EventTone {
+  let hash = 0;
+  for (let i = 0; i < project.length; i++) hash = (hash * 31 + project.charCodeAt(i)) | 0;
+  return TONES[Math.abs(hash) % TONES.length];
+}
+
+export function dateSortKey(dateStr: string): string {
+  return dateStr.split('/').reverse().join('');
+}
+
+export function sortEntriesDesc<T extends { date: string; id: string }>(list: T[]): T[] {
+  return [...list].sort((a, b) => dateSortKey(b.date).localeCompare(dateSortKey(a.date)) || b.id.localeCompare(a.id));
+}
+
+export function longDayLabel(date: Date): string {
+  return date.toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' });
+}

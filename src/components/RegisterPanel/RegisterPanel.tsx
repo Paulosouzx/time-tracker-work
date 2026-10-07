@@ -1,179 +1,59 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { IconPlus, IconClockPause } from '@tabler/icons-react';
 import { useApp } from '../../context/AppContext';
-import './RegisterPanel.css';
 import { TimePicker, CalendarPicker, FloatInput } from '../Layout/Pickers';
+import WeekSummary from '../Layout/WeekSummary';
+import EntryCard from '../Entries/EntryCard';
+import EntryEditModal from '../Entries/EntryEditModal';
 import { todayStr, toDStr, fmtH } from '../../utils';
+import { consumePendingRegisterDate } from '../../router';
 import { Entry } from '../../types';
+import './RegisterPanel.css';
 
-function parseDate(dateString: string) {
-  const [day, month, year] = dateString.split('/').map(Number);
-  return new Date(year, month - 1, day);
-}
+type DayView = 'today' | 'previous';
 
-function EditModal({ entry, onClose }: { entry: Entry; onClose: () => void }) {
-  const { entries, saveEntries } = useApp();
-  const [hours, setHours] = useState(entry.h);
-  const [project, setProject] = useState(entry.proj);
-  const [description, setDescription] = useState(entry.desc);
-  const [link, setLink] = useState(entry.link || '');
-  const [date, setDate] = useState(parseDate(entry.date));
-
-  function saveEntry() {
-    const updated = entries.map(current =>
-      current.id === entry.id
-        ? { ...current, h: hours, proj: project.trim(), desc: description.trim(), link: link.trim(), date: toDStr(date) }
-        : current,
-    );
-    saveEntries(updated);
-    onClose();
-  }
-
-  return (
-    <div className="modal-bg open" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal">
-        <div className="modal-header">
-          <h2>Editar entrada</h2>
-          <button className="btn-icon" onClick={onClose}><i className="ti ti-x" /></button>
-        </div>
-
-        <div className="modal-grid">
-          <TimePicker value={hours} onChange={setHours} />
-          <FloatInput label="Projeto" id="mProj" value={project} onChange={setProject} />
-        </div>
-
-        <div className="modal-section">
-          <CalendarPicker value={date} onChange={setDate} />
-        </div>
-
-        <FloatInput label="Descrição" id="mDesc" value={description} onChange={setDescription} style={{ marginBottom: 12 }} />
-        <FloatInput
-          label="Link da Case (opcional)"
-          id="mLink"
-          type="url"
-          placeholder="https://…"
-          value={link}
-          onChange={setLink}
-          style={{ marginTop: 12 }}
-        />
-
-        <div className="modal-actions">
-          <button className="btn-cancel" onClick={onClose}>Cancelar</button>
-          <button className="btn-save" onClick={saveEntry}>Guardar Alterações</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function TodayTable({ onEdit }: { onEdit: (entry: Entry) => void }) {
-  const { entries, saveEntries, showSync } = useApp();
-  const today = todayStr();
-
-  const todayEntries = useMemo(() => entries.filter(entry => entry.date === today), [entries, today]);
-  const totalToday = useMemo(() => todayEntries.reduce((sum, entry) => sum + entry.h, 0), [todayEntries]);
-  const progress = Math.min(100, Math.round((totalToday / 8) * 100));
-  const progressColor = totalToday >= 8 ? 'var(--ok)' : totalToday >= 6 ? 'var(--warn)' : 'var(--primary)';
-
-  function deleteEntry(entryId: string) {
-    if (!confirm('Deseja eliminar este registo?')) return;
-    saveEntries(entries.filter(entry => entry.id !== entryId));
-  }
-
-  function updateSync(entryId: string, checked: boolean) {
-    saveEntries(entries.map(entry => (entry.id === entryId ? { ...entry, sync: checked } : entry)));
-  }
-
-  return (
-    <>
-      <div className="today-bar">
-        <span className="today-label">Hoje</span>
-        <div className="bar-mini">
-          <div className="bar-mini-fill" style={{ width: `${progress}%`, background: progressColor }} />
-        </div>
-        <span className="today-remaining" style={{ color: progressColor }}>
-          {8 - totalToday > 0 ? `${fmtH(8 - totalToday)} restantes` : 'completo!'}
-        </span>
-        <span className="today-h" style={{ color: progressColor }}>{fmtH(totalToday)}</span>
-      </div>
-
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              {showSync && <th className="sync-header"><i className="ti ti-check" /></th>}
-              <th>Data</th>
-              <th>Projeto</th>
-              <th>Descrição</th>
-              <th>Link</th>
-              <th>Horas</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {todayEntries.map(entry => (
-              <tr key={entry.id}>
-                {showSync && (
-                  <td className="td-sync-cell">
-                    <input
-                      type="checkbox"
-                      checked={!!entry.sync}
-                      onChange={event => updateSync(entry.id, event.target.checked)}
-                    />
-                  </td>
-                )}
-                <td className="td-date">{entry.date}</td>
-                <td className="td-proj">{entry.proj}</td>
-                <td className="td-desc">{entry.desc}</td>
-                <td className="td-link">
-                  {entry.link ? (
-                    <a href={entry.link} target="_blank" rel="noopener noreferrer" title={entry.link}>
-                      <i className="ti ti-external-link td-link-icon" />
-                    </a>
-                  ) : null}
-                </td>
-                <td className="td-h">{fmtH(entry.h)}</td>
-                <td className="td-actions">
-                  <button className="btn-icon" onClick={() => onEdit(entry)}><i className="ti ti-pencil" /></button>
-                  <button className="btn-icon del" onClick={() => deleteEntry(entry.id)}><i className="ti ti-trash" /></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {todayEntries.length === 0 && (
-          <div className="empty-state">
-            <div className="empty-icon"><i className="ti ti-clock-pause" /></div>
-            Nenhuma entrada hoje ainda
-          </div>
-        )}
-      </div>
-    </>
-  );
+function previousDayStr() {
+  const date = new Date();
+  date.setDate(date.getDate() - 1);
+  return toDStr(date);
 }
 
 export default function RegisterPanel() {
-  const { entries, saveEntries } = useApp();
+  const { entries, saveEntries, showSync } = useApp();
   const [hours, setHours] = useState(1.0);
   const [project, setProject] = useState('');
   const [description, setDescription] = useState('');
   const [link, setLink] = useState('');
-  const [date, setDate] = useState(new Date());
+  const [date, setDate] = useState(() => consumePendingRegisterDate() ?? new Date());
+  const [error, setError] = useState('');
   const [editEntry, setEditEntry] = useState<Entry | null>(null);
+  const [dayView, setDayView] = useState<DayView>('today');
+  const formRef = useRef<HTMLFormElement>(null);
+  const projectRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     function handleDateSelect(event: Event) {
       const customEvent = event as CustomEvent<{ date: string | Date }>;
+      consumePendingRegisterDate();
       setDate(new Date(customEvent.detail.date));
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-
     window.addEventListener('tt:selectDate', handleDateSelect);
     return () => window.removeEventListener('tt:selectDate', handleDateSelect);
   }, []);
 
-  function addEntry() {
+  const today = todayStr();
+  const dayKey = dayView === 'today' ? today : previousDayStr();
+  const dayEntries = useMemo(() => entries.filter((entry) => entry.date === dayKey), [entries, dayKey]);
+  const dayTotal = useMemo(() => dayEntries.reduce((sum, entry) => sum + entry.h, 0), [dayEntries]);
+  const totalToday = useMemo(() => entries.filter((entry) => entry.date === today).reduce((sum, entry) => sum + entry.h, 0), [entries, today]);
+  const progress = Math.min(100, Math.round((totalToday / 8) * 100));
+
+  function addEntry(event: React.FormEvent) {
+    event.preventDefault();
     if (!project.trim()) {
-      alert('Por favor, preencha o nome do projeto.');
+      setError('Por favor, preencha o nome do projeto.');
+      projectRef.current?.focus();
       return;
     }
 
@@ -190,6 +70,7 @@ export default function RegisterPanel() {
       },
     ]);
 
+    setError('');
     setProject('');
     setDescription('');
     setLink('');
@@ -197,35 +78,101 @@ export default function RegisterPanel() {
     setDate(new Date());
   }
 
+  function repeatEntry(entry: Entry) {
+    setHours(entry.h);
+    setProject(entry.proj);
+    setDescription(entry.desc);
+    setLink(entry.link || '');
+    setDate(new Date());
+    setError('');
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    projectRef.current?.focus({ preventScroll: true });
+  }
+
+  function updateSync(entry: Entry, checked: boolean) {
+    saveEntries(entries.map((item) => (item.id === entry.id ? { ...item, sync: checked } : item)));
+  }
+
   return (
-    <div id="panelReg" className="panel active">
-      <div className="form-card">
-        <div className="form-grid">
-          <TimePicker value={hours} onChange={setHours} />
-          <FloatInput label="Projeto" id="eProj" placeholder="ex: Firstbike" value={project} onChange={setProject} />
-          <CalendarPicker value={date} onChange={setDate} alignRight />
+    <div className="home">
+      <div className="home-grid">
+        <div className="home-col">
+          <WeekSummary />
+
+          <form className="card register-card" ref={formRef} onSubmit={addEntry} aria-labelledby="registerTitle" noValidate>
+            <h2 className="card-title" id="registerTitle">Nova entrada</h2>
+            <div className="register-grid">
+              <TimePicker value={hours} onChange={setHours} />
+              <CalendarPicker value={date} onChange={setDate} alignRight />
+            </div>
+            <div className="entry-form-stack">
+              <FloatInput
+                label="Projeto"
+                id="eProj"
+                placeholder="ex: Firstbike"
+                value={project}
+                onChange={(value) => { setProject(value); if (error) setError(''); }}
+                inputRef={projectRef}
+                invalid={!!error}
+              />
+              {error && <p className="form-error" role="alert">{error}</p>}
+              <FloatInput label="Descrição" id="eDesc" placeholder="O que foi feito…" value={description} onChange={setDescription} />
+              <FloatInput label="Link da case (opcional)" id="eLink" type="url" placeholder="https://…" value={link} onChange={setLink} />
+            </div>
+            <button type="submit" className="btn-primary register-submit">
+              <IconPlus size={18} stroke={2} /> Registar entrada
+            </button>
+          </form>
         </div>
 
-        <div className="form-full">
-          <FloatInput label="Descrição" id="eDesc" placeholder="O que foi feito…" value={description} onChange={setDescription} style={{ marginBottom: 14 }} />
-          <FloatInput
-            label="Link da Case (opcional)"
-            id="eLink"
-            type="url"
-            placeholder="https://…"
-            value={link}
-            onChange={setLink}
-            style={{ marginBottom: 14 }}
-          />
-        </div>
+        <div className="home-col">
+          <section className="card today-card" aria-label="Progresso de hoje">
+            <div className="today-row">
+              <span className="today-label">Hoje</span>
+              <span className="today-remaining">
+                {8 - totalToday > 0 ? `${fmtH(8 - totalToday)} restantes` : 'Completo!'}
+              </span>
+              <span className="today-h tabular">{fmtH(totalToday)}</span>
+            </div>
+            <div className="week-bar" role="progressbar" aria-valuemin={0} aria-valuemax={8} aria-valuenow={totalToday} aria-label="Progresso diário">
+              <div className="week-bar-fill" style={{ width: `${progress}%` }} />
+            </div>
+          </section>
 
-        <button className="btn-add" onClick={addEntry}>
-          <i className="ti ti-plus" /> Registar Entrada
-        </button>
+          <div className="segmented home-segmented" role="group" aria-label="Dia a mostrar">
+            <button type="button" aria-pressed={dayView === 'today'} onClick={() => setDayView('today')}>Hoje</button>
+            <button type="button" aria-pressed={dayView === 'previous'} onClick={() => setDayView('previous')}>Dia anterior</button>
+          </div>
+
+          <section className="day-group" aria-labelledby="dayGroupTitle">
+            <div className="day-group-head">
+              <h2 className="day-group-title" id="dayGroupTitle">{dayView === 'today' ? 'Hoje' : 'Ontem'} · <span className="tabular">{dayKey}</span></h2>
+              <span className="day-group-total tabular">{fmtH(dayTotal)}</span>
+            </div>
+            {dayEntries.length > 0 ? (
+              <div className="entry-list">
+                {dayEntries.map((entry) => (
+                  <EntryCard
+                    key={entry.id}
+                    entry={entry}
+                    showSync={showSync}
+                    onEdit={setEditEntry}
+                    onToggleSync={updateSync}
+                    onRepeat={repeatEntry}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="card empty-state">
+                <span className="empty-icon"><IconClockPause size={26} stroke={1.75} /></span>
+                {dayView === 'today' ? 'Nenhuma entrada hoje ainda' : 'Sem entradas no dia anterior'}
+              </div>
+            )}
+          </section>
+        </div>
       </div>
 
-      <TodayTable onEdit={setEditEntry} />
-      {editEntry && <EditModal entry={editEntry} onClose={() => setEditEntry(null)} />}
+      {editEntry && <EntryEditModal entry={editEntry} onClose={() => setEditEntry(null)} />}
     </div>
   );
 }

@@ -21,3 +21,16 @@ export function pushRoute(tab: TabId) {
     window.history.pushState({ tab }, '', path);
   }
 }
+
+let pendingRegisterDate: Date | null = null;
+
+export function setPendingRegisterDate(date: Date) {
+  pendingRegisterDate = date;
+  window.dispatchEvent(new CustomEvent('tt:selectDate', { detail: { date } }));
+}
+
+export function consumePendingRegisterDate(): Date | null {
+  const date = pendingRegisterDate;
+  pendingRegisterDate = null;
+  return date;
+}
