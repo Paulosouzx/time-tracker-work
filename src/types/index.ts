@@ -14,6 +14,7 @@ export interface Note {
   body: string;
   date: string;
   done?: boolean;
+  updatedAt?: number;
 }
 
 export interface Holiday {

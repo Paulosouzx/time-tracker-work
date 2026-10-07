@@ -11,6 +11,7 @@ import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../supabase/supabaseClient';
 import { Entry, Note, Holiday, ThemeMode, TabId } from '../types';
 import { tabFromPath, pushRoute } from '../router';
+import { useNotesStore, NotesSaveState } from './useNotesStore';
 import { loadJson, loadBool, loadString } from '../services/localStorageService';
 import {
   applyTheme,
@@ -22,7 +23,6 @@ import {
 import {
   loadAppData,
   saveEntriesToSupabase,
-  saveNotesToSupabase,
   savePrefsToSupabase,
   PrefsPayload,
 } from '../services/supabaseService';
@@ -34,10 +34,13 @@ interface AppContextType {
   notes: Note[];
   holidays: Holiday[];
   setEntries: React.Dispatch<React.SetStateAction<Entry[]>>;
-  setNotes: React.Dispatch<React.SetStateAction<Note[]>>;
   setHolidays: React.Dispatch<React.SetStateAction<Holiday[]>>;
   saveEntries: (updated: Entry[]) => void;
-  saveNotes: (updated: Note[]) => void;
+  saveNotes: (updated: Note[], options?: { immediate?: boolean }) => void;
+  notesSaveState: NotesSaveState;
+  noteToOpen: string | null;
+  openNoteInPage: (id: string) => void;
+  clearNoteToOpen: () => void;
   saveHolidays: (updated: Holiday[]) => void;
 
   activeTab: TabId;
@@ -74,7 +77,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const [entries, setEntries] = useState<Entry[]>([]);
-  const [notes, setNotes] = useState<Note[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>(() => loadJson('tt_holidays', []));
 
   const [showSync, setShowSync] = useState(() => loadBool('tt_show_sync'));
@@ -93,6 +95,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return mode;
   });
 
+  const { notes, saveNotes, saveState: notesSaveState, ingest: ingestNotes } = useNotesStore(currentUser?.id ?? null);
+  const [noteToOpen, setNoteToOpen] = useState<string | null>(null);
+
   const [activeTab, setActiveTabState] = useState<TabId>(() => tabFromPath(window.location.pathname));
 
   useEffect(() => {
@@ -108,7 +113,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const saveEntriesTimer = useRef<ReturnType<typeof setTimeout>>();
-  const saveNotesTimer = useRef<ReturnType<typeof setTimeout>>();
   const savePrefsTimer = useRef<ReturnType<typeof setTimeout>>();
 
   const prefsRef = useRef<PrefsPayload>({});
@@ -147,10 +151,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   async function loadFromSupabase(uid: string) {
     setLoadError(null);
     try {
-      const { entries: entriesData, notes: notesData, prefs } = await loadAppData(uid);
+      const { entries: entriesData, notes: notesData, prefs, noteRowIds } = await loadAppData(uid);
 
       setEntries(entriesData);
-      setNotes(notesData);
+      ingestNotes(notesData, noteRowIds);
 
       if (prefs) {
         if (prefs.theme) {
@@ -209,16 +213,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }, 800);
   }, [currentUser]);
 
-  const saveNotes = useCallback((updated: Note[]) => {
-    setNotes(updated);
-    localStorage.setItem('tt_notes', JSON.stringify(updated));
-    if (!currentUser) return;
-    clearTimeout(saveNotesTimer.current);
-    saveNotesTimer.current = setTimeout(() => {
-      saveNotesToSupabase(currentUser.id, updated);
-    }, 800);
-  }, [currentUser]);
-
   const saveHolidays = useCallback((updated: Holiday[]) => {
     setHolidays(updated);
     localStorage.setItem('tt_holidays', JSON.stringify(updated));
@@ -233,6 +227,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }, 1000);
   }, [currentUser]);
 
+  const openNoteInPage = useCallback((id: string) => {
+    setNoteToOpen(id);
+    setActiveTab('notes');
+  }, [setActiveTab]);
+
+  const clearNoteToOpen = useCallback(() => setNoteToOpen(null), []);
+
   const retryLoad = useCallback(() => {
     if (currentUser) loadFromSupabase(currentUser.id);
   }, [currentUser]);
@@ -246,8 +247,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider value={{
       currentUser, authReady,
       entries, notes, holidays,
-      setEntries, setNotes, setHolidays,
+      setEntries, setHolidays,
       saveEntries, saveNotes, saveHolidays,
+      notesSaveState, noteToOpen, openNoteInPage, clearNoteToOpen,
       activeTab, setActiveTab,
       showSync, setShowSync,
       showNotesDone, setShowNotesDone,

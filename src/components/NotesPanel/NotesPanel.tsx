@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   IconGripVertical,
   IconCheck,
@@ -98,13 +98,40 @@ function NoteCard({
 }
 
 export default function NotesPanel() {
-  const { notes, saveNotes, notesCollapsed, showNotesDone, noteOrder, setNoteOrder, savePrefs } = useApp();
+  const { notes, saveNotes, notesCollapsed, showNotesDone, noteOrder, setNoteOrder, savePrefs, noteToOpen, clearNoteToOpen } = useApp();
   const [title, setTitle] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const editorRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
   const dragSource = useRef<string | null>(null);
+  const loadedRef = useRef<{ title: string; body: string } | null>(null);
+
+  useEffect(() => {
+    if (!noteToOpen) return;
+    const note = notes.find((item) => item.id === noteToOpen);
+    clearNoteToOpen();
+    if (note) editNote(note);
+  }, [noteToOpen]);
+
+  useEffect(() => {
+    if (!editingId) return;
+    const note = notes.find((item) => item.id === editingId);
+    if (!note) {
+      resetEditor();
+      return;
+    }
+    const loaded = loadedRef.current;
+    if (!loaded) return;
+    if (note.body !== loaded.body && editorRef.current && document.activeElement !== editorRef.current) {
+      editorRef.current.innerHTML = note.body;
+      loaded.body = note.body;
+    }
+    if (note.title !== loaded.title && document.activeElement !== titleRef.current) {
+      setTitle(note.title);
+      loaded.title = note.title;
+    }
+  }, [notes, editingId]);
 
   const sortedNotes = useMemo(() => {
     if (!noteOrder?.length) return [...notes].reverse();
@@ -129,6 +156,7 @@ export default function NotesPanel() {
     setTitle('');
     setEditingId(null);
     setError('');
+    loadedRef.current = null;
     if (editorRef.current) editorRef.current.innerHTML = '';
   }
 
@@ -163,6 +191,7 @@ export default function NotesPanel() {
     setTitle(note.title);
     setEditingId(note.id);
     setError('');
+    loadedRef.current = { title: note.title, body: note.body };
     if (editorRef.current) editorRef.current.innerHTML = note.body;
     titleRef.current?.focus();
     titleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });

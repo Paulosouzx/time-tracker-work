@@ -33,9 +33,11 @@ export async function loadAppData(uid: string) {
   const notes = Array.isArray(notesData)
     ? notesData.map((r: any) => r.data as Note)
     : [];
+  const noteRowIds: Record<string, string> = {};
+  if (Array.isArray(notesData)) notesData.forEach((r: any) => { noteRowIds[r.id] = r.note_id; });
   const prefs = prefsData?.data as PrefsPayload | undefined;
 
-  return { entries, notes, prefs };
+  return { entries, notes, prefs, noteRowIds };
 }
 
 export async function saveEntriesToSupabase(uid: string, updated: Entry[]) {
@@ -51,17 +53,51 @@ export async function saveEntriesToSupabase(uid: string, updated: Entry[]) {
   }
 }
 
-export async function saveNotesToSupabase(uid: string, updated: Note[]) {
-  try {
-    await supabase.from('tt_notes').delete().eq('user_id', uid);
-    if (updated.length > 0) {
-      await supabase.from('tt_notes').insert(
-        updated.map((n) => ({ user_id: uid, note_id: n.id, data: n }))
-      );
-    }
-  } catch (error) {
-    console.warn('Notes save error:', error);
-  }
+export async function saveNoteRow(uid: string, note: Note): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('tt_notes')
+    .update({ data: note })
+    .eq('user_id', uid)
+    .eq('note_id', note.id)
+    .select('id');
+  if (error) throw error;
+  if (data && data.length > 0) return data[0].id;
+
+  const inserted = await supabase
+    .from('tt_notes')
+    .insert({ user_id: uid, note_id: note.id, data: note })
+    .select('id');
+  if (inserted.error) throw inserted.error;
+  return inserted.data?.[0]?.id ?? null;
+}
+
+export async function deleteNoteRow(uid: string, noteId: string) {
+  const { error } = await supabase.from('tt_notes').delete().eq('user_id', uid).eq('note_id', noteId);
+  if (error) throw error;
+}
+
+export function subscribeToNotes(
+  uid: string,
+  handlers: {
+    onUpsert: (rowId: string, note: Note) => void;
+    onDelete: (rowId: string) => void;
+  },
+) {
+  const channel = supabase
+    .channel(`tt_notes:${uid}`)
+    .on(
+      'postgres_changes' as any,
+      { event: '*', schema: 'public', table: 'tt_notes', filter: `user_id=eq.${uid}` },
+      (payload: any) => {
+        if (payload.eventType === 'DELETE') {
+          if (payload.old?.id) handlers.onDelete(payload.old.id);
+        } else if (payload.new?.data) {
+          handlers.onUpsert(payload.new.id, payload.new.data as Note);
+        }
+      },
+    )
+    .subscribe();
+  return () => { supabase.removeChannel(channel); };
 }
 
 export async function savePrefsToSupabase(uid: string, prefs: PrefsPayload) {

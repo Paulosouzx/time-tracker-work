@@ -14,6 +14,7 @@ import { ROUTES } from '../../router';
 import { TabId } from '../../types';
 import { getGreeting } from '../../utils';
 import UserAvatar, { getUserDisplay } from './UserAvatar';
+import FloatingNotes from '../FloatingNotes/FloatingNotes';
 import './AppShell.css';
 
 interface NavItem {
@@ -155,6 +156,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
           {children}
         </main>
       </div>
+
+      <FloatingNotes />
 
       <nav className="bottom-nav" aria-label="Navegação principal">
         {NAV.filter((item) => item.mobile).map((item) => <NavLink key={item.id} item={item} compact />)}
