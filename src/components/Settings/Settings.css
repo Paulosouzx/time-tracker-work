@@ -1,5 +1,6 @@
 .settings-page {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   align-items: start;
 }
@@ -25,7 +26,7 @@
 
 .account-info {
   flex: 1;
-  min-width: 160px;
+  min-width: 0;
 }
 
 .account-name {
@@ -53,14 +54,32 @@
 }
 
 .theme-segmented {
+  display: flex;
   align-self: flex-start;
   max-width: 100%;
 }
 
 .theme-segmented button {
+  flex: 1 1 0;
+  min-width: 0;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+@media (max-width: 400px) {
+  .theme-segmented {
+    align-self: stretch;
+  }
+
+  .theme-segmented button {
+    padding: 0 6px;
+    gap: 4px;
+    font-size: 13px;
+  }
 }
 
 .setting-row {
@@ -108,7 +127,7 @@
 
 .holiday-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
   gap: 12px;
 }
 
@@ -120,6 +139,11 @@
 
 .holiday-row-inline .field {
   flex: 1 1 140px;
+  min-width: 0;
+}
+
+.holiday-row-inline > button {
+  flex: 1 1 auto;
 }
 
 .holiday-row-inline .holiday-name {
