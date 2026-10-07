@@ -1,7 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  IconSun,
+  IconCalendarWeek,
+  IconTrendingUp,
+  IconDatabase,
+  IconBriefcase,
+  IconNotes,
+  IconChartBar,
+  IconChartDonut,
+  IconTrophy,
+  type Icon,
+} from '@tabler/icons-react';
 import { useApp } from '../../context/AppContext';
+import { Entry } from '../../types';
+import { todayStr, getWeekKey, getWeekNumber, fmtH, toDStr, sortEntriesDesc } from '../../utils';
+import EntryCard from '../Entries/EntryCard';
+import EntryEditModal from '../Entries/EntryEditModal';
 import './Dashboard.css';
-import { todayStr, getWeekKey, getWeekNumber, fmtH, DASH_PALETTE, toDStr } from '../../utils';
+
+const RANGES = [8, 12, 24];
+const PALETTE_VARS = ['--chart-1', '--chart-2', '--chart-3', '--chart-4', '--chart-5', '--chart-6', '--chart-7'];
 
 function getRecentWeekKeys(count: number) {
   const today = new Date();
@@ -12,399 +30,411 @@ function getRecentWeekKeys(count: number) {
   }).reverse();
 }
 
+function cssVar(name: string) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+function usePalette() {
+  const theme = useThemeAttr();
+  return useMemo(() => PALETTE_VARS.map(cssVar), [theme]);
+}
+
+function useThemeAttr() {
+  const [theme, setTheme] = useState(() => document.documentElement.getAttribute('data-theme'));
+  useEffect(() => {
+    const observer = new MutationObserver(() => setTheme(document.documentElement.getAttribute('data-theme')));
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => observer.disconnect();
+  }, []);
+  return theme;
+}
+
+function useWidth(ref: React.RefObject<HTMLElement>) {
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    if (!ref.current) return;
+    const observer = new ResizeObserver(([entry]) => setWidth(Math.round(entry.contentRect.width)));
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [ref]);
+  return width;
+}
+
+function projectTotals(entries: Entry[]) {
+  const totals: Record<string, number> = {};
+  entries.forEach((entry) => { totals[entry.proj] = (totals[entry.proj] || 0) + entry.h; });
+  return Object.entries(totals).sort((a, b) => b[1] - a[1]);
+}
+
 function KPIs() {
   const { entries, notes } = useApp();
   const today = todayStr();
   const weekKey = getWeekKey(today);
 
-  const todayEntries = useMemo(() => entries.filter(entry => entry.date === today), [entries, today]);
-  const weekEntries = useMemo(() => entries.filter(entry => getWeekKey(entry.date) === weekKey), [entries, weekKey]);
+  const metrics = useMemo(() => {
+    const todayEntries = entries.filter((entry) => entry.date === today);
+    const totalToday = todayEntries.reduce((sum, entry) => sum + entry.h, 0);
+    const totalWeek = entries.filter((entry) => getWeekKey(entry.date) === weekKey).reduce((sum, entry) => sum + entry.h, 0);
+    const totalAll = entries.reduce((sum, entry) => sum + entry.h, 0);
+    const projectCount = new Set(entries.map((entry) => entry.proj)).size;
+    const totals = getRecentWeekKeys(8).map((key) => entries.filter((entry) => getWeekKey(entry.date) === key).reduce((sum, entry) => sum + entry.h, 0));
+    const activeWeeks = totals.filter((value) => value > 0);
+    const weeklyAverage = activeWeeks.length ? activeWeeks.reduce((sum, value) => sum + value, 0) / activeWeeks.length : 0;
 
-  const totalToday = useMemo(() => todayEntries.reduce((sum, entry) => sum + entry.h, 0), [todayEntries]);
-  const totalWeek = useMemo(() => weekEntries.reduce((sum, entry) => sum + entry.h, 0), [weekEntries]);
-  const totalAll = useMemo(() => entries.reduce((sum, entry) => sum + entry.h, 0), [entries]);
-  const projectCount = useMemo(() => new Set(entries.map(entry => entry.proj)).size, [entries]);
-
-  const weeklyAverage = useMemo(() => {
-    const weekKeys = getRecentWeekKeys(8);
-    const totals = weekKeys.map(key => entries.filter(entry => getWeekKey(entry.date) === key).reduce((sum, entry) => sum + entry.h, 0));
-    const activeWeeks = totals.filter(value => value > 0);
-    return activeWeeks.length ? activeWeeks.reduce((sum, value) => sum + value, 0) / activeWeeks.length : 0;
-  }, [entries]);
-
-  const metrics = [
-    { icon: 'ti-sun', label: 'Hoje', value: fmtH(totalToday), sub: `${todayEntries.length} entr.` },
-    { icon: 'ti-calendar-week', label: 'Esta Semana', value: fmtH(totalWeek), sub: 'de 40h' },
-    { icon: 'ti-trending-up', label: 'Média Semanal', value: fmtH(Math.round(weeklyAverage * 4) / 4), sub: 'últ. semanas activas' },
-    { icon: 'ti-database', label: 'Total', value: fmtH(totalAll), sub: 'histórico' },
-    { icon: 'ti-briefcase', label: 'Projetos', value: String(projectCount), sub: 'distintos' },
-    { icon: 'ti-notes', label: 'Notas', value: String(notes.filter(note => !note.done).length), sub: 'activas' },
-  ];
+    const list: { icon: Icon; label: string; value: string; sub: string }[] = [
+      { icon: IconSun, label: 'Hoje', value: fmtH(totalToday), sub: `${todayEntries.length} entr.` },
+      { icon: IconCalendarWeek, label: 'Esta semana', value: fmtH(totalWeek), sub: 'de 40h' },
+      { icon: IconTrendingUp, label: 'Média semanal', value: fmtH(Math.round(weeklyAverage * 4) / 4), sub: 'últ. semanas ativas' },
+      { icon: IconDatabase, label: 'Total', value: fmtH(totalAll), sub: 'histórico' },
+      { icon: IconBriefcase, label: 'Projetos', value: String(projectCount), sub: 'distintos' },
+      { icon: IconNotes, label: 'Notas', value: String(notes.filter((note) => !note.done).length), sub: 'ativas' },
+    ];
+    return list;
+  }, [entries, notes, today, weekKey]);
 
   return (
     <div className="dash-kpis">
-      {metrics.map(metric => (
-        <div className="dash-kpi" key={metric.label}>
-          <div className="dash-kpi-icon"><i className={`ti ${metric.icon}`} /></div>
-          <div className="dash-kpi-label">{metric.label}</div>
-          <div className="dash-kpi-value">{metric.value}</div>
-          <div className="dash-kpi-sub">{metric.sub}</div>
+      {metrics.map(({ icon: IconCmp, label, value, sub }) => (
+        <div className="card dash-kpi" key={label}>
+          <span className="dash-kpi-icon"><IconCmp size={18} stroke={1.75} /></span>
+          <span className="dash-kpi-label">{label}</span>
+          <span className="dash-kpi-value tabular">{value}</span>
+          <span className="dash-kpi-sub">{sub}</span>
         </div>
       ))}
     </div>
   );
 }
 
-function LineChart({ weeksRange }: { weeksRange: number }) {
+function roundedTopRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  const radius = Math.min(r, w / 2, h);
+  ctx.beginPath();
+  ctx.moveTo(x, y + h);
+  ctx.lineTo(x, y + radius);
+  ctx.arcTo(x, y, x + radius, y, radius);
+  ctx.lineTo(x + w - radius, y);
+  ctx.arcTo(x + w, y, x + w, y + radius, radius);
+  ctx.lineTo(x + w, y + h);
+  ctx.closePath();
+}
+
+function WeeklyBarChart({ weekKeys }: { weekKeys: string[] }) {
   const { entries } = useApp();
+  const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const tooltipRef = useRef<HTMLDivElement>(null);
+  const [hover, setHover] = useState<{ index: number; x: number; y: number } | null>(null);
+  const width = useWidth(wrapRef);
+  const theme = useThemeAttr();
+
+  const data = useMemo(
+    () => weekKeys.map((key) => entries.filter((entry) => getWeekKey(entry.date) === key).reduce((sum, entry) => sum + entry.h, 0)),
+    [entries, weekKeys],
+  );
+  const labels = useMemo(() => weekKeys.map((key, index) => (index === weekKeys.length - 1 ? 'Esta' : `S${getWeekNumber(key)}`)), [weekKeys]);
+  const height = 200;
+  const padding = { top: 22, right: 8, bottom: 28, left: 36 };
+  const maxValue = Math.max(...data, 8);
+  const plotWidth = Math.max(0, width - padding.left - padding.right);
+  const plotHeight = height - padding.top - padding.bottom;
+  const slot = plotWidth / (data.length || 1);
+  const barWidth = Math.min(28, slot * 0.6);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const weekKeys = getRecentWeekKeys(weeksRange);
-    const data = weekKeys.map(key => entries.filter(entry => getWeekKey(entry.date) === key).reduce((sum, entry) => sum + entry.h, 0));
-    const labels = weekKeys.map((key, index) => index === weekKeys.length - 1 ? 'Esta' : `S${getWeekNumber(key)}`);
-
+    if (!canvas || !width) return;
     const dpr = window.devicePixelRatio || 1;
-    const width = canvas.parentElement?.clientWidth || 600;
-    const height = 160;
     canvas.width = width * dpr;
     canvas.height = height * dpr;
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    const style = getComputedStyle(document.documentElement);
-    const accent = style.getPropertyValue('--primary').trim() || '#534AB7';
-    const text3 = style.getPropertyValue('--text3').trim() || '#9895b0';
-    const border = style.getPropertyValue('--border').trim() || '#E2E0F0';
-    const surface = style.getPropertyValue('--surface').trim() || '#fff';
-    const ok = style.getPropertyValue('--ok').trim() || '#1D9E75';
-
-    const padding = { top: 16, right: 16, bottom: 36, left: 38 };
-    const plotWidth = width - padding.left - padding.right;
-    const plotHeight = height - padding.top - padding.bottom;
-    const maxValue = Math.max(...data, 8);
-
     ctx.clearRect(0, 0, width, height);
+
+    const primary = cssVar('--primary');
+    const muted = cssVar('--text-muted');
+    const border = cssVar('--border');
+    const text = cssVar('--text');
+    const font = cssVar('--font');
+
     ctx.strokeStyle = border;
     ctx.lineWidth = 1;
-
-    [0, 0.25, 0.5, 0.75, 1].forEach(fraction => {
-      const y = padding.top + plotHeight * (1 - fraction);
+    ctx.font = `12px ${font}`;
+    [0, 0.5, 1].forEach((fraction) => {
+      const y = Math.round(padding.top + plotHeight * (1 - fraction)) + 0.5;
       ctx.beginPath();
       ctx.moveTo(padding.left, y);
       ctx.lineTo(padding.left + plotWidth, y);
       ctx.stroke();
-      ctx.fillStyle = text3;
-      ctx.font = '10px system-ui';
+      ctx.fillStyle = muted;
       ctx.textAlign = 'right';
-      ctx.fillText(fmtH(maxValue * fraction), padding.left - 4, y + 3);
+      ctx.fillText(fmtH(maxValue * fraction), padding.left - 6, y + 4);
     });
 
     if (maxValue >= 35) {
       const goalY = padding.top + plotHeight * (1 - 40 / maxValue);
       ctx.save();
-      ctx.strokeStyle = ok;
-      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = muted;
       ctx.setLineDash([4, 4]);
       ctx.beginPath();
       ctx.moveTo(padding.left, goalY);
       ctx.lineTo(padding.left + plotWidth, goalY);
       ctx.stroke();
       ctx.restore();
+      ctx.fillStyle = muted;
+      ctx.textAlign = 'left';
+      ctx.fillText('40h', padding.left + 4, goalY - 4);
     }
 
-    const points = data.map((value, index) => ({
-      x: padding.left + (index / (data.length - 1 || 1)) * plotWidth,
-      y: padding.top + plotHeight * (1 - value / maxValue),
-    }));
-
-    const gradient = ctx.createLinearGradient(0, padding.top, 0, padding.top + plotHeight);
-    gradient.addColorStop(0, `${accent}55`);
-    gradient.addColorStop(1, `${accent}00`);
-
-    ctx.beginPath();
-    points.forEach((point, index) => index === 0 ? ctx.moveTo(point.x, point.y) : ctx.lineTo(point.x, point.y));
-    ctx.lineTo(points[points.length - 1].x, padding.top + plotHeight);
-    ctx.lineTo(points[0].x, padding.top + plotHeight);
-    ctx.closePath();
-    ctx.fillStyle = gradient;
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.strokeStyle = accent;
-    ctx.lineWidth = 2.5;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    points.forEach((point, index) => index === 0 ? ctx.moveTo(point.x, point.y) : ctx.lineTo(point.x, point.y));
-    ctx.stroke();
-
-    points.forEach((point, index) => {
-      ctx.fillStyle = text3;
-      ctx.font = '10px system-ui';
+    data.forEach((value, index) => {
+      const cx = padding.left + slot * index + slot / 2;
+      const barHeight = (value / maxValue) * plotHeight;
+      if (value > 0) {
+        ctx.fillStyle = primary;
+        roundedTopRect(ctx, cx - barWidth / 2, padding.top + plotHeight - barHeight, barWidth, barHeight, 8);
+        ctx.fill();
+        if (slot > 30) {
+          ctx.fillStyle = text;
+          ctx.font = `600 11px ${font}`;
+          ctx.textAlign = 'center';
+          ctx.fillText(fmtH(value), cx, padding.top + plotHeight - barHeight - 6);
+        }
+      }
+      ctx.fillStyle = muted;
+      ctx.font = `${index === data.length - 1 ? '600 ' : ''}11px ${font}`;
       ctx.textAlign = 'center';
-      ctx.fillText(labels[index], point.x, height - padding.bottom + 14);
-
-      ctx.beginPath();
-      ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
-      ctx.fillStyle = surface;
-      ctx.fill();
-      ctx.strokeStyle = accent;
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      if (data[index] > 0) {
-        ctx.fillStyle = accent;
-        ctx.font = 'bold 10px system-ui';
-        ctx.fillText(fmtH(data[index]), point.x, point.y - 9);
+      if (slot > 26 || index % 2 === data.length % 2) {
+        ctx.fillText(labels[index], cx, height - 8);
       }
     });
+  }, [data, labels, width, theme, maxValue, plotHeight, plotWidth, slot, barWidth]);
 
-    const tooltip = tooltipRef.current;
-    function handleMove(event: MouseEvent) {
-      const rect = canvas?.getBoundingClientRect();
-      if (!rect) return;
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      const hitIndex = points.findIndex(point => Math.hypot(x - point.x, y - point.y) < 20);
-
-      if (hitIndex >= 0 && tooltip) {
-        tooltip.textContent = `${labels[hitIndex]}: ${fmtH(data[hitIndex])}`;
-        tooltip.classList.add('visible');
-        tooltip.style.left = `${event.clientX + 12}px`;
-        tooltip.style.top = `${event.clientY - 28}px`;
-      } else {
-        tooltip?.classList.remove('visible');
-      }
+  function handleMove(event: React.MouseEvent<HTMLCanvasElement>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = event.clientX - rect.left - padding.left;
+    const index = Math.floor(x / slot);
+    if (index >= 0 && index < data.length) {
+      setHover({ index, x: event.clientX - rect.left, y: event.clientY - rect.top });
+    } else {
+      setHover(null);
     }
-
-    canvas.addEventListener('mousemove', handleMove);
-    canvas.addEventListener('mouseleave', () => tooltip?.classList.remove('visible'));
-    return () => {
-      canvas.removeEventListener('mousemove', handleMove);
-      tooltip?.classList.remove('visible');
-    };
-  }, [entries, weeksRange]);
+  }
 
   return (
-    <>
-      <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
-      <div ref={tooltipRef} className="chart-tooltip" />
-    </>
+    <div className="dash-chart-area" ref={wrapRef}>
+      <canvas
+        ref={canvasRef}
+        role="img"
+        aria-label={`Horas por semana: ${data.map((value, index) => `${labels[index]} ${fmtH(value)}`).join(', ')}`}
+        onMouseMove={handleMove}
+        onMouseLeave={() => setHover(null)}
+      />
+      {hover && (
+        <div className="chart-tooltip" style={{ left: hover.x, top: hover.y }}>
+          {labels[hover.index]}: <strong className="tabular">{fmtH(data[hover.index])}</strong>
+        </div>
+      )}
+    </div>
   );
 }
 
-function DonutChart() {
-  const { entries } = useApp();
+function DonutChart({ entries }: { entries: Entry[] }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const legendRef = useRef<HTMLDivElement>(null);
-  const tooltipRef = useRef<HTMLDivElement>(null);
+  const palette = usePalette();
+  const [hover, setHover] = useState<{ index: number; x: number; y: number } | null>(null);
+  const size = 168;
+  const outerRadius = 76;
+  const innerRadius = 50;
+
+  const slices = useMemo(() => {
+    const sorted = projectTotals(entries);
+    const top = sorted.slice(0, 6);
+    const otherTotal = sorted.slice(6).reduce((sum, [, value]) => sum + value, 0);
+    if (otherTotal > 0) top.push(['Outros', otherTotal]);
+    return top;
+  }, [entries]);
+  const total = slices.reduce((sum, [, value]) => sum + value, 0);
+
+  const angles = useMemo(() => {
+    let start = -Math.PI / 2;
+    return slices.map(([, value]) => {
+      const angle = (value / (total || 1)) * Math.PI * 2;
+      const range = { start, end: start + angle };
+      start += angle;
+      return range;
+    });
+  }, [slices, total]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
-    const totals = entries.reduce<Record<string, number>>((acc, entry) => {
-      acc[entry.proj] = (acc[entry.proj] || 0) + entry.h;
-      return acc;
-    }, {});
-
-    const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
-    const slices = sorted.slice(0, 6);
-    const otherTotal = sorted.slice(6).reduce((sum, [, value]) => sum + value, 0);
-    if (otherTotal > 0) slices.push(['Outros', otherTotal]);
-
-    const total = slices.reduce((sum, [, value]) => sum + value, 0) || 1;
-    const size = 160;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+    canvas.style.width = `${size}px`;
+    canvas.style.height = `${size}px`;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
-    const devicePixelRatio = window.devicePixelRatio || 1;
-    canvas.width = size * devicePixelRatio;
-    canvas.height = size * devicePixelRatio;
-    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
-
-    const style = getComputedStyle(document.documentElement);
-    const surface2 = style.getPropertyValue('--surface2').trim() || '#F1EFF9';
-    const surface = style.getPropertyValue('--surface').trim() || '#fff';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, size, size);
     const center = size / 2;
-    const outerRadius = 62;
-    const innerRadius = 38;
 
-    if (slices.length === 0) {
+    if (!slices.length) {
       ctx.beginPath();
       ctx.arc(center, center, outerRadius, 0, Math.PI * 2);
-      ctx.fillStyle = surface2;
+      ctx.arc(center, center, innerRadius, 0, Math.PI * 2, true);
+      ctx.fillStyle = cssVar('--surface-muted');
       ctx.fill();
-      if (legendRef.current) legendRef.current.innerHTML = '';
       return;
     }
 
-    let startAngle = -Math.PI / 2;
-    const sliceAngles: Array<{ name: string; value: number; start: number; end: number }> = [];
-
-    slices.forEach(([name, value], index) => {
-      const angle = (value / total) * Math.PI * 2;
+    const gap = slices.length > 1 ? 0.02 : 0;
+    angles.forEach(({ start, end }, index) => {
       ctx.beginPath();
-      ctx.moveTo(center, center);
-      ctx.arc(center, center, outerRadius, startAngle, startAngle + angle);
+      ctx.arc(center, center, outerRadius, start + gap, end - gap);
+      ctx.arc(center, center, innerRadius, end - gap, start + gap, true);
       ctx.closePath();
-      ctx.fillStyle = DASH_PALETTE[index % DASH_PALETTE.length];
+      ctx.fillStyle = palette[index % palette.length];
       ctx.fill();
-      sliceAngles.push({ name, value, start: startAngle, end: startAngle + angle });
-      startAngle += angle;
     });
+  }, [slices, angles, palette]);
 
-    ctx.beginPath();
-    ctx.arc(center, center, innerRadius, 0, Math.PI * 2);
-    ctx.fillStyle = surface;
-    ctx.fill();
-
-    ctx.fillStyle = style.getPropertyValue('--text1').trim() || '#1a1a2e';
-    ctx.font = 'bold 14px system-ui';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(fmtH(total), center, center);
-
-    if (legendRef.current) {
-      legendRef.current.innerHTML = slices.map(([name, value], index) =>
-        `<div class="dash-legend-item">
-          <span class="dash-legend-dot" style="background:${DASH_PALETTE[index % DASH_PALETTE.length]};"></span>
-          <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${name}</span>
-          <span style="font-weight:600;color:var(--primary);font-size:11px;">${fmtH(value)}</span>
-        </div>`
-      ).join('');
-    }
-
-    const tooltip = tooltipRef.current;
-    function handleMove(event: MouseEvent) {
-      const rect = canvas?.getBoundingClientRect();
-      if (!rect) return;
-      const scale = size / rect.width;
-      const x = (event.clientX - rect.left) * scale - center;
-      const y = (event.clientY - rect.top) * scale - center;
-      const distance = Math.hypot(x, y);
-      if (distance < innerRadius || distance > outerRadius) {
-        tooltip?.classList.remove('visible');
-        return;
-      }
-
-      let angle = Math.atan2(y, x);
-      if (angle < -Math.PI / 2) angle += Math.PI * 2;
-      const slice = sliceAngles.find(sliceData => angle >= sliceData.start && angle < sliceData.end);
-      if (!slice) {
-        tooltip?.classList.remove('visible');
-        return;
-      }
-
-      if (tooltip) {
-        tooltip.textContent = `${slice.name}: ${fmtH(slice.value)} (${Math.round((slice.value / total) * 100)}%)`;
-        tooltip.classList.add('visible');
-        tooltip.style.left = `${event.clientX + 12}px`;
-        tooltip.style.top = `${event.clientY - 28}px`;
-      }
-    }
-
-    canvas.addEventListener('mousemove', handleMove);
-    canvas.addEventListener('mouseleave', () => tooltip?.classList.remove('visible'));
-    return () => {
-      canvas.removeEventListener('mousemove', handleMove);
-      tooltip?.classList.remove('visible');
-    };
-  }, [entries]);
-
-  return (
-    <>
-      <canvas ref={canvasRef} width={160} height={160} />
-      <div ref={tooltipRef} className="chart-tooltip" />
-      <div ref={legendRef} style={{ display: 'flex', flexDirection: 'column', gap: 5, padding: '0 4px 4px' }} />
-    </>
-  );
-}
-
-function TopProjects() {
-  const { entries } = useApp();
-
-  const projects = useMemo(() => {
-    const totals: Record<string, number> = {};
-    entries.forEach(entry => { totals[entry.proj] = (totals[entry.proj] || 0) + entry.h; });
-    return Object.entries(totals).sort((a, b) => b[1] - a[1]).slice(0, 6);
-  }, [entries]);
-
-  const maxHours = projects[0]?.[1] || 1;
-
-  if (!projects.length) {
-    return <div className="dash-empty">Sem dados ainda</div>;
+  function handleMove(event: React.MouseEvent<HTMLCanvasElement>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = event.clientX - rect.left - size / 2;
+    const y = event.clientY - rect.top - size / 2;
+    const distance = Math.hypot(x, y);
+    if (distance < innerRadius || distance > outerRadius) return setHover(null);
+    let angle = Math.atan2(y, x);
+    if (angle < -Math.PI / 2) angle += Math.PI * 2;
+    const index = angles.findIndex(({ start, end }) => angle >= start && angle < end);
+    setHover(index >= 0 ? { index, x: event.clientX - rect.left, y: event.clientY - rect.top } : null);
   }
 
   return (
-    <>
-      {projects.map(([name, hours], index) => (
-        <div key={name} className="dash-proj-row">
-          <div className="dash-proj-name" title={name}>{name}</div>
-          <div className="dash-proj-bar-bg">
-            <div
-              className="dash-proj-bar-fill"
-              style={{ width: `${(hours / maxHours) * 100}%`, background: DASH_PALETTE[index % DASH_PALETTE.length] }}
-            />
+    <div className="dash-donut-wrap">
+      <div className="dash-donut">
+        <canvas
+          ref={canvasRef}
+          role="img"
+          aria-label={`Horas por projeto: ${slices.map(([name, value]) => `${name} ${fmtH(value)}`).join(', ') || 'sem dados'}`}
+          onMouseMove={handleMove}
+          onMouseLeave={() => setHover(null)}
+        />
+        <span className="dash-donut-total tabular" aria-hidden="true">{fmtH(total)}</span>
+        {hover && (
+          <div className="chart-tooltip" style={{ left: hover.x, top: hover.y }}>
+            {slices[hover.index][0]}: <strong className="tabular">{fmtH(slices[hover.index][1])}</strong> ({Math.round((slices[hover.index][1] / (total || 1)) * 100)}%)
           </div>
-          <div className="dash-proj-h">{fmtH(hours)}</div>
-        </div>
+        )}
+      </div>
+      <ul className="dash-legend">
+        {slices.map(([name, value], index) => (
+          <li key={name} className="dash-legend-item">
+            <span className="dash-legend-dot" style={{ background: palette[index % palette.length] }} />
+            <span className="dash-legend-name">{name}</span>
+            <span className="dash-legend-value tabular">{fmtH(value)}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function TopProjects({ entries }: { entries: Entry[] }) {
+  const palette = usePalette();
+  const projects = useMemo(() => projectTotals(entries).slice(0, 6), [entries]);
+  const maxHours = projects[0]?.[1] || 1;
+
+  if (!projects.length) {
+    return <div className="empty-state">Sem dados ainda</div>;
+  }
+
+  return (
+    <ul className="dash-top-projects">
+      {projects.map(([name, hours], index) => (
+        <li key={name} className="dash-proj-row">
+          <span className="dash-proj-name" title={name}>{name}</span>
+          <span className="dash-proj-bar-bg">
+            <span className="dash-proj-bar-fill" style={{ width: `${(hours / maxHours) * 100}%`, background: palette[index % palette.length] }} />
+          </span>
+          <span className="dash-proj-h tabular">{fmtH(hours)}</span>
+        </li>
       ))}
-    </>
+    </ul>
   );
 }
 
 export default function Dashboard() {
+  const { entries, saveEntries, showSync } = useApp();
   const [weeksRange, setWeeksRange] = useState(8);
+  const [editEntry, setEditEntry] = useState<Entry | null>(null);
+
+  const weekKeys = useMemo(() => getRecentWeekKeys(weeksRange), [weeksRange]);
+  const rangeEntries = useMemo(() => {
+    const keys = new Set(weekKeys);
+    return entries.filter((entry) => keys.has(getWeekKey(entry.date)));
+  }, [entries, weekKeys]);
+  const rangeTotal = rangeEntries.reduce((sum, entry) => sum + entry.h, 0);
+  const recent = useMemo(() => sortEntriesDesc(entries).slice(0, 5), [entries]);
 
   return (
-    <div id="panelDash" className="panel active">
+    <div className="dash">
+      <div className="chips" role="group" aria-label="Período">
+        {RANGES.map((range) => (
+          <button key={range} type="button" className="chip-filter" aria-pressed={weeksRange === range} onClick={() => setWeeksRange(range)}>
+            {range} semanas
+          </button>
+        ))}
+      </div>
+
+      <section className="card dash-hero" aria-labelledby="dashTotal">
+        <div className="dash-hero-head">
+          <div>
+            <h2 className="dash-hero-label" id="dashTotal">Total de horas</h2>
+            <p className="dash-hero-value tabular">{fmtH(rangeTotal)}</p>
+            <p className="dash-hero-sub">nas últimas {weeksRange} semanas · {rangeEntries.length} entradas</p>
+          </div>
+          <span className="dash-card-title-icon" aria-hidden="true"><IconChartBar size={20} stroke={1.75} /></span>
+        </div>
+        <WeeklyBarChart weekKeys={weekKeys} />
+      </section>
+
       <KPIs />
 
-      <div className="dash-card dash-card-chart">
-        <div className="dash-card-header">
-          <span className="dash-card-title"><i className="ti ti-chart-line" /> Horas por Semana</span>
-          <select
-            className="week-select"
-            value={weeksRange}
-            onChange={e => setWeeksRange(Number(e.target.value))}
-          >
-            <option value={8}>Últimas 8 semanas</option>
-            <option value={12}>Últimas 12 semanas</option>
-            <option value={24}>Últimas 24 semanas</option>
-          </select>
-        </div>
-        <div className="dash-chart-area">
-          <LineChart weeksRange={weeksRange} />
-        </div>
+      <div className="dash-two-col">
+        <section className="card dash-card" aria-labelledby="dashDonut">
+          <h2 className="dash-card-title" id="dashDonut"><IconChartDonut size={18} stroke={1.75} /> Por projeto</h2>
+          <DonutChart entries={entries} />
+        </section>
+        <section className="card dash-card" aria-labelledby="dashTop">
+          <h2 className="dash-card-title" id="dashTop"><IconTrophy size={18} stroke={1.75} /> Top projetos</h2>
+          <TopProjects entries={entries} />
+        </section>
       </div>
 
-      <div className="dash-two-col">
-        <div className="dash-card">
-          <div className="dash-card-header">
-            <span className="dash-card-title"><i className="ti ti-chart-donut" /> Por Projeto</span>
+      <section aria-labelledby="dashRecent">
+        <h2 className="section-title" id="dashRecent">Atividade recente</h2>
+        {recent.length ? (
+          <div className="entry-list">
+            {recent.map((entry) => (
+              <EntryCard
+                key={entry.id}
+                entry={entry}
+                showSync={showSync}
+                showDate
+                onEdit={setEditEntry}
+                onToggleSync={(item, checked) => saveEntries(entries.map((e) => (e.id === item.id ? { ...e, sync: checked } : e)))}
+              />
+            ))}
           </div>
-          <div className="dash-donut-wrap">
-            <DonutChart />
-          </div>
-        </div>
-        <div className="dash-card">
-          <div className="dash-card-header">
-            <span className="dash-card-title"><i className="ti ti-trophy" /> Top Projetos</span>
-          </div>
-          <div className="dash-top-projects">
-            <TopProjects />
-          </div>
-        </div>
-      </div>
+        ) : (
+          <div className="card empty-state">Sem atividade ainda</div>
+        )}
+      </section>
+
+      {editEntry && <EntryEditModal entry={editEntry} onClose={() => setEditEntry(null)} />}
     </div>
   );
 }
